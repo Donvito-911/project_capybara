@@ -1,0 +1,410 @@
+---
+title: "Positive selection scan on Capybara genome"
+author: "Santiago Herrera-Alvarez"
+date: "September 2, 2020"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    highlight: kate
+geometry: margin=2cm
+fontsize: 10pt
+---
+
+```{r knitr, echo=FALSE}
+knitr::opts_chunk$set(
+  comment   = "#",
+  results   = "hold",
+  # collapse  = TRUE,
+  fig.align = "center",
+  cache=FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy= TRUE,
+  tidy.opts=list(width.cutoff=80))
+```
+
+```{r, warning=FALSE,message=FALSE}
+library(ggplot2)
+library(biomaRt)
+library(ggrepel)
+library(MCMCtreeR) #remotes::install_github("PuttickMacroevolution/MCMCtreeR")
+library(ggtree) #BiocManager::install("ggtree")
+library(tidyverse)
+library(qvalue)
+```
+
+## Data: LRTs and PDIs
+Amino acid sites within a protein may experience different selective pressures and have different underlying $d_N/d_S$ ratios (Yang et al., 2000; Smith et al. 2015). We fitted branch-site models to identify positive selection in a set of 4,452 SCOs obtained using the OrthoVenn software (Wang et al., 2015) on capybara versus four closely related rodents with published whole genome sequences: naked mole rat, degu, chinchilla and guinea pig.
+
++ **LRTs**: Likelihood-ratio tests (LRT) between two models of codon evolution were used as a measure of model fit: 1) a branch-site model (model A) which attempts to detect positive selection acting on a few sites on specified lineages or 'foreground branches' ($d_N/d_S$>1), versus the null model (A null) in which codons can only evolve neutrally ($d_N/d_S$ =1) or under purifying selection (0< $d_N/d_S$ <1; Zhang et al., 2005); 2) an adaptive branch-site random effects model (aBSREL; Smith et al. 2015) which determines the proportion of sites with $d_N/d_S$>1 on the foreground branch relative to a null model (0< $d_N/d_S$ =<1). **NOTE: results of LRTs for each of the 4,452 SCOs are available in the table `LR_Pval_codeml_absrel.csv`. The p-values correspond to each LRT**
+
++ **PDI**: ((Capybara, guinea pig), degu) protein trios where used to estimate the difference of the raw p-distance in protein sequence between capybara and (pdCD), and the raw p-distance between guinea pig and degu (pdGD). These two distances were used to calculate the 'protein distance index' or PDI for each (PDIi = pdCDi - pdGDi) which takes a value of zero if the two p-distances are equal, meaning that the capybara and guinea pig lineages have evolved at equal rates since their divergence from their most recent common ancestor (MRCA). A positive value is indicative of accelerated protein evolution in the capybara lineage. **NOTE: results of PDI for each of the 4,452 SCOs are available in the table `genetic_dists.csv`.**
+
+```{r, echo=FALSE}
+tr <- readMCMCtree("../Rodent_phylogenomic_MCMCtree.tre")
+g <- groupOTU(tr$apePhy,.node=c("Capybara","Cavia","Degu"))
+p2 <- ggtree(g, aes(color=group)) + geom_tiplab() + geom_hilight(30,"steelblue",alpha = 0.6) + xlim(0, 1) + scale_color_manual(values=c("black","orange"))
+flip(p2,30,20)
+
+```
+
+**ORANGE:** Scope of the PDI analysis  
+**BLUE:** Scope of the positive selection analysis using branch-site models
+
+### Exploratory analysis
+
+**NOTE: The file `genetic_dists.csv` contains the following information: SCO-cluster name, Guinea pig ensembl prot id, Tamura-Nei distance for DNA seqs, and protein raw-p distance**
+
+Tamura-Nei distances of DNA sequences and raw-p distances were computed on ((Capybara, guinea pig), degu) orthologs.
+
+```{r, echo=FALSE, warning=FALSE,message=FALSE}
+t <- read.csv("../genetic_dists.csv",h=TRUE)
+
+#Quick and exploratory plot of Tamura-Nei distance vs, raw-p distance. Note the tight positive correlation between both statistics.
+t <- t[complete.cases(t), ]
+
+ggplot(t, aes(x= D_stat_DNA, y=D_stat_prot)) + geom_point() + geom_smooth() + xlab("Tamura-Nei distance") + ylab("Protein raw-p distance")
+```
+
+## model A (codeml) and aBSREL (HyPhy) results are strongly correlated
+
+```{r, warning=FALSE, echo=FALSE}
+#Import results from Branch-site tests: codeml model A and aBSREL
+bs <- read.csv("../LR_Pval_codeml_absrel.csv",h=TRUE)
+
+#Combine the two datasets
+tcombined <- merge.data.frame(t,bs,by="Cluster")
+t2 <- tcombined[complete.cases(tcombined), ]
+```
+
+We used two different (widely used) Branch-Site models: 1) model A of codeml (PAML) and 2) aBSREL (HyPhy). Below is shown the rank-order correlation of the Likelihood-ratio tests obtained from both models, as well as the number of putatively selected genes in the capybara based on FDR and Bonferroni correction.
+
+```{r, warning=FALSE, echo=FALSE}
+#Genes under positive selection under codeml model A
+pvals_codeml <- t2$Pval_codeml[t2$Pval_codeml<1]
+hist(pvals_codeml)
+qobj1 <- qvalue(p=pvals_codeml)
+print(paste("Number of genes under positive selection under codeml model A with an FDR of 0.01: ", sum(qobj1$qvalues<0.01)))
+
+pval_bonferroni_codeml <- p.adjust(pvals_codeml,method = "bonferroni",n = length(pvals_codeml))
+print(paste("Number of genes under positive selection under codeml model A after Bonferroni correction < 0.01: ", sum(pval_bonferroni_codeml<0.01)))
+```
+```{r, warning=FALSE, echo=FALSE}
+#Genes under positive selection under aBSREL
+pvals_absrel <- t2$Pval_aBSREL[t2$Pval_aBSREL<1]
+hist(pvals_absrel)
+print("Cannot compute qvalues for truncated p-value distributions")
+
+pval_bonferroni_absrel <- p.adjust(pvals_absrel,method = "bonferroni",n = length(pvals_absrel))
+print(paste("Number of genes under positive selection under aBSREL after Bonferroni correction < 0.01: ", sum(pval_bonferroni_absrel<0.01)))
+```
+```{r, warning=FALSE, echo=FALSE}
+#Correlation of LR values under both models
+mod <- lm(t2$LR_aBSREL~t2$LR_codeml)
+plot(t2$LR_codeml,t2$LR_aBSREL,pch=16,ylab="LR aBSREL",xlab="LR codeml")
+abline(mod,col="red")
+cor.test(t2$LR_codeml,t2$LR_aBSREL)
+wilcox.test(t2$LR_codeml,t2$LR_aBSREL)
+```
+
+
+## Plot of the genes on a two-dimension graph with coordinates x=LR, y=PDI
+
+We considered genes in the top 5% of the distribution in both dimensions (i.e., the LRTs of branch-site models and the PDI statistic) as positively selected in the capybara lineage. We used a standardized PDI statistic to account for differences in the rates of evolution between proteins.
+
+```{r, warning=FALSE, echo=FALSE}
+#Standardization of PDI statistic: PDI/GPD. 
+#Rationale: A PDI of 0.1 can be caused by 0.2-0.1 or 0.9-0.8 (CD-GPD, respectively). In the first case the CD value is 2x the GPD value implying higher relative rate of evolution.
+
+D_stat_prot_Stand <- c()
+for(i in 1:length(t2$D_stat_prot)){
+  q <- NULL
+  if(t2$GPDp[i] == 0) q <- t2$D_stat_prot[i]*10
+  else q <- t2$D_stat_prot[i]/t2$GPDp[i]
+  D_stat_prot_Stand <- c(D_stat_prot_Stand,q)
+}
+t2$D_stat_prot_Stand <- D_stat_prot_Stand
+
+#Extract the genes on the top 5% of the distribution of both axes: model A codeml
+t3 <- t2[!(t2$LR_codeml<0),]
+labels=t3[t3$LR_codeml>=quantile(t3$LR_codeml,0.95) & t3$D_stat_prot_Stand>=quantile(t3$D_stat_prot_Stand,0.95),]
+
+#Labels for genes related to growth, skeletal and limb development
+skeleton <- t3[t3$gene_name=="SMAD6" |  t3$gene_name=="ACVR1B" | t3$gene_name=="BMPR1A" | t3$gene_name=="DEAF1" | t3$gene_name=="TAPT1" , ]
+cell_prol_growth <- t3[t3$gene_name=="PLAGL2", ]
+limb <- t3[t3$gene_name=="OSR1" | t3$gene_name=="MEOX2", ]
+label_insulin <- t3[t3$gene_name=="Ins",]
+
+ggplot(t3, aes(LR_codeml,D_stat_prot_Stand)) + geom_point(colour="grey87") + geom_point(data=labels, aes(x=LR_codeml, y=D_stat_prot_Stand), colour="#666666") + geom_point(data=skeleton, aes(x=LR_codeml, y=D_stat_prot_Stand), colour="#990066",size=3) + geom_point(data=cell_prol_growth, aes(x=LR_codeml, y=D_stat_prot_Stand), colour="#FFCC00",size=3) + geom_point(data=limb, aes(x=LR_codeml, y=D_stat_prot_Stand), colour="#3399FF",size=3) + geom_point(data=label_insulin, aes(x=LR_codeml, y=D_stat_prot_Stand), colour="darkorange1",size=3) + geom_text_repel(data=rbind(skeleton,cell_prol_growth,limb,label_insulin),aes(label=gene_name),fontface = 'bold', color = 'black', box.padding = unit(0.35, "lines"), point.padding = unit(0.5, "lines")) + labs(x="LR branch-site test (model A codeml)", y = "Standardized PDI") + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=15)) + theme(legend.position = c(0.75, 0.6),legend.background = element_rect(color = "black", fill = "white", size = 1, linetype = "solid")) + geom_vline(xintercept = quantile(t3$LR_codeml,0.95), linetype="dotted") + geom_hline(yintercept = quantile(t3$D_stat_prot_Stand,0.95), linetype="dotted") + ylim(0,40)
+
+#Extract the genes on the top 5% of the distribution of both axes: aBSREL
+t4 <- t2[!(t2$LR_aBSREL<0),]
+labels2=t4[t4$LR_aBSREL>=quantile(t4$LR_aBSREL,0.95) & t4$D_stat_prot_Stand>=quantile(t4$D_stat_prot_Stand,0.95),]
+
+#Labels for genes related to growth, skeletal and limb development
+skeleton <- t4[t4$gene_name=="SMAD6" |  t4$gene_name=="ACVR1B" | t4$gene_name=="BMPR1A" | t4$gene_name=="DEAF1" | t4$gene_name=="TAPT1" , ]
+cell_prol_growth <- t4[t4$gene_name=="PLAGL2", ]
+limb <- t4[t4$gene_name=="OSR1" | t4$gene_name=="MEOX2", ]
+label_insulin <- t4[t4$gene_name=="Ins",]
+
+ggplot(t4, aes(LR_aBSREL,D_stat_prot_Stand)) + geom_point(colour="grey87") + geom_point(data=labels2, aes(x=LR_aBSREL, y=D_stat_prot_Stand), colour="#666666") + geom_point(data=skeleton, aes(x=LR_aBSREL, y=D_stat_prot_Stand), colour="#990066",size=3) + geom_point(data=cell_prol_growth, aes(x=LR_aBSREL, y=D_stat_prot_Stand), colour="#FFCC00",size=3) + geom_point(data=limb, aes(x=LR_aBSREL, y=D_stat_prot_Stand), colour="#3399FF",size=3) + geom_point(data=label_insulin, aes(x=LR_aBSREL, y=D_stat_prot_Stand), colour="darkorange1",size=3) + geom_text_repel(data=rbind(skeleton,cell_prol_growth,limb,label_insulin),aes(label=gene_name),fontface = 'bold', color = 'black', box.padding = unit(0.35, "lines"), point.padding = unit(0.5, "lines")) + labs(x="LR branch-site test (aBSREL)", y = "Standardized PDI") + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=15)) + theme(legend.position = c(0.75, 0.6),legend.background = element_rect(color = "black", fill = "white", size = 1, linetype = "solid")) + geom_vline(xintercept = quantile(t4$LR_aBSREL,0.95), linetype="dotted") + geom_hline(yintercept = quantile(t4$D_stat_prot_Stand,0.95), linetype="dotted") + ylim(0,40)
+```
+
+Interestingly, Insulin is not positevely selected in the capybara, although it has been shown to have signatures of positive selection in caviomorph rodents (Opazo et al., 2005). However, insulin transcription and secretion mediated by PDX1 (see pairwise comparisons) may be part of the underlying mechanism regulating body size evolution in the capybara.
+
+## Fisher's exact test (GO enrichment) of genes under positive selection: GOSlim GOA descriptions
+
+```{r,echo=FALSE}
+ensembl=useMart("ensembl")
+ensembl_cavia=useMart("ensembl",dataset="cporcellus_gene_ensembl")
+
+all <- t3$ensmbl_CporID.x
+outliers <- labels$ensmbl_CporID.x
+
+#Extract GO annotations for the 39 genes under positive selection
+out_genes <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(outliers),mart=ensembl_cavia)
+#out_names <- unique(out$external_gene_name)
+
+#Extract GO annotations for ALL the 4,452 genes
+all_genes <- getBM(attributes=c("ensembl_peptide_id","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(all),mart=ensembl_cavia)
+
+#Perform Fisher's exact test
+all_GOs <- all_genes$goslim_goa_description
+out_GOs <- out_genes$goslim_goa_description
+unique_out_GOs <- unique(out_genes$goslim_goa_description)
+fisherPvalues_out <- c()
+GO_term <- c()
+
+for(i in 1:length(unique_out_GOs)){
+	a <- sapply(unique_out_GOs[i],function(x) sum(x==out_GOs))
+	b <- sapply(unique_out_GOs[i],function(x) sum(x==all_GOs))
+	c <- length(out_GOs)-a
+	d <- length(all_GOs)-b
+	f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")
+  GO_term <- c(GO_term,as.character(unique_out_GOs[i]))
+  fisherPvalues_out <- c(fisherPvalues_out,f$p.value)
+}
+fisherPvalues_out_Bonferroni <- p.adjust(fisherPvalues_out,method="bonferroni",n=length(fisherPvalues_out))
+out_fisherResults <- data.frame(GO_term,fisherPvalues_out,fisherPvalues_out_Bonferroni)
+significativas_out <- out_fisherResults[out_fisherResults$fisherPvalues_out_Bonferroni<0.05,]
+
+significativas_out
+```
+
+
+## Fisher's exact test (GO enrichment) of genes under positive selection: GO ids
+
+TreeMap from REVIGO for GO biological processes terms represented by genes evolving under positive selection in the capybara. Rectangle size reflects semantic uniqueness of GO term, which measures the degree to which the term is an outlier when compared semantically to the list of terms present in the mouse.
+
+```{r,echo=FALSE}
+all_GOs <- all_genes$go_id
+out_GOs <- out_genes$go_id
+unique_out_GOs_ids <- unique(out_genes$go_id)
+fisherPvalues_out <- c()
+GO_id <- c()
+
+for(i in 1:length(unique_out_GOs_ids)){
+  a <- sapply(unique_out_GOs_ids[i],function(x) sum(x==out_GOs))
+  b <- sapply(unique_out_GOs_ids[i],function(x) sum(x==all_GOs))
+  c <- length(out_GOs)-a
+  d <- length(all_GOs)-b
+  f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")
+  GO_id <- c(GO_id,as.character(unique_out_GOs_ids[i]))
+  fisherPvalues_out <- c(fisherPvalues_out,f$p.value)
+}
+fisherPvalues_out_Bonferroni <- p.adjust(fisherPvalues_out,method="bonferroni",n=length(fisherPvalues_out))
+out_fisherResults <- data.frame(GO_id,fisherPvalues_out,fisherPvalues_out_Bonferroni)
+significativas_out <- out_fisherResults[out_fisherResults$fisherPvalues_out_Bonferroni<0.05,]
+
+### REVIGO Treemap ####
+
+# A treemap R script produced by the REVIGO server at http://revigo.irb.hr/
+# If you found REVIGO useful in your work, please cite the following reference:
+# Supek F et al. "REVIGO summarizes and visualizes long lists of Gene Ontology
+# terms" PLoS ONE 2011. doi:10.1371/journal.pone.0021800
+
+# author: Anton Kratz <anton.kratz@gmail.com>, RIKEN Omics Science Center, Functional Genomics Technology Team, Japan
+# created: Fri, Nov 02, 2012  7:25:52 PM
+# last change: Fri, Nov 09, 2012  3:20:01 PM
+
+# -----------------------------------------------------------------------------
+# If you don't have the treemap package installed, uncomment the following line:
+# install.packages( "treemap" );
+library(treemap) 								# treemap package by Martijn Tennekes
+
+# Set the working directory if necessary
+# setwd("C:/Users/username/workingdir");
+
+# --------------------------------------------------------------------------
+# Here is your data from REVIGO. Scroll down for plot configuration options.
+
+revigo.names <- c("term_ID","description","freqInDbPercent","abslog10pvalue","uniqueness","dispensability","representative");
+revigo.data <- rbind(c("GO:0003183","mitral valve morphogenesis",0.057,61.9398,0.665,0.000,"developmental growth / chondrocyte differentiation"),
+c("GO:0019827","stem cell population maintenance",0.746,8.0933,0.779,0.223,"developmental growth / chondrocyte differentiation"),
+c("GO:0007389","pattern specification process",2.175,9.8960,0.728,0.279,"developmental growth / chondrocyte differentiation"),
+c("GO:2001214","positive regulation of vasculogenesis",0.043,11.3765,0.643,0.463,"developmental growth / chondrocyte differentiation"),
+c("GO:0007398","ectoderm development",0.095,27.0801,0.753,0.367,"developmental growth / chondrocyte differentiation"),
+c("GO:0007399","nervous system development",10.304,4.2127,0.667,0.473,"developmental growth / chondrocyte differentiation"),
+c("GO:0060976","coronary vasculature development",0.323,22.7135,0.650,0.593,"developmental growth / chondrocyte differentiation"),
+c("GO:0007352","zygotic specification of dorsal/ventral axis",0.009,33.0987,0.748,0.132,"developmental growth / chondrocyte differentiation"),
+c("GO:0001942","hair follicle development",0.456,12.0946,0.659,0.519,"developmental growth / chondrocyte differentiation"),
+c("GO:0048589","developmental growth",3.068,14.4828,0.751,0.209,"developmental growth / chondrocyte differentiation"),
+c("GO:0048389","intermediate mesoderm development",0.009,19.8464,0.766,0.627,"developmental growth / chondrocyte differentiation"),
+c("GO:0072208","metanephric smooth muscle tissue development",0.009,13.5468,0.668,0.582,"developmental growth / chondrocyte differentiation"),
+c("GO:0048378","regulation of lateral mesodermal cell fate specification",0.009,27.0801,0.610,0.627,"developmental growth / chondrocyte differentiation"),
+c("GO:0035912","dorsal aorta morphogenesis",0.038,27.0801,0.700,0.378,"developmental growth / chondrocyte differentiation"),
+c("GO:0072183","negative regulation of nephron tubule epithelial cell differentiation",0.009,19.8464,0.609,0.675,"developmental growth / chondrocyte differentiation"),
+c("GO:0072184","renal vesicle progenitor cell differentiation",0.005,19.8464,0.677,0.649,"developmental growth / chondrocyte differentiation"),
+c("GO:0048382","mesendoderm development",0.024,18.8573,0.746,0.663,"developmental growth / chondrocyte differentiation"),
+c("GO:0072190","ureter urothelium development",0.014,19.8464,0.679,0.589,"developmental growth / chondrocyte differentiation"),
+c("GO:0050768","negative regulation of neurogenesis",1.216,15.5192,0.620,0.432,"developmental growth / chondrocyte differentiation"),
+c("GO:0072239","metanephric glomerulus vasculature development",0.043,15.7733,0.630,0.660,"developmental growth / chondrocyte differentiation"),
+c("GO:0042733","embryonic digit morphogenesis",0.332,30.4634,0.666,0.373,"developmental growth / chondrocyte differentiation"),
+c("GO:0072268","pattern specification involved in metanephros development",0.019,19.8464,0.666,0.611,"developmental growth / chondrocyte differentiation"),
+c("GO:1904414","positive regulation of cardiac ventricle development",0.005,27.0801,0.683,0.566,"developmental growth / chondrocyte differentiation"),
+c("GO:0007204","positive regulation of cytosolic calcium ion concentration",1.159,1.6782,0.912,0.418,"developmental growth / chondrocyte differentiation"),
+c("GO:0045444","fat cell differentiation",1.064,13.6056,0.764,0.233,"developmental growth / chondrocyte differentiation"),
+c("GO:0014032","neural crest cell development",0.309,15.6042,0.636,0.678,"developmental growth / chondrocyte differentiation"),
+c("GO:0072259","metanephric interstitial fibroblast development",0.005,19.8464,0.701,0.556,"developmental growth / chondrocyte differentiation"),
+c("GO:0060021","palate development",0.451,42.6176,0.801,0.157,"developmental growth / chondrocyte differentiation"),
+c("GO:0030324","lung development",1.016,9.7248,0.676,0.676,"developmental growth / chondrocyte differentiation"),
+c("GO:0030308","negative regulation of cell growth",0.717,4.4191,0.848,0.697,"developmental growth / chondrocyte differentiation"),
+c("GO:0001880","Mullerian duct regression",0.014,25.2402,0.767,0.233,"developmental growth / chondrocyte differentiation"),
+c("GO:0060043","regulation of cardiac muscle cell proliferation",0.171,24.5483,0.564,0.668,"developmental growth / chondrocyte differentiation"),
+c("GO:0030857","negative regulation of epithelial cell differentiation",0.190,13.0855,0.630,0.621,"developmental growth / chondrocyte differentiation"),
+c("GO:0045648","positive regulation of erythrocyte differentiation",0.100,22.5421,0.666,0.407,"developmental growth / chondrocyte differentiation"),
+c("GO:0048793","pronephros development",0.043,14.9993,0.693,0.649,"developmental growth / chondrocyte differentiation"),
+c("GO:0021983","pituitary gland development",0.199,19.2308,0.727,0.270,"developmental growth / chondrocyte differentiation"),
+c("GO:0072111","cell proliferation involved in kidney development",0.095,19.8464,0.663,0.692,"developmental growth / chondrocyte differentiation"),
+c("GO:0021998","neural plate mediolateral regionalization",0.005,27.0801,0.791,0.415,"developmental growth / chondrocyte differentiation"),
+c("GO:1905285","fibrous ring of heart morphogenesis",0.005,27.0801,0.746,0.340,"developmental growth / chondrocyte differentiation"),
+c("GO:0030501","positive regulation of bone mineralization",0.190,27.2517,0.626,0.389,"developmental growth / chondrocyte differentiation"),
+c("GO:0048352","paraxial mesoderm structural organization",0.005,27.0801,0.678,0.295,"developmental growth / chondrocyte differentiation"),
+c("GO:0030154","cell differentiation",18.534,15.2207,0.693,0.434,"developmental growth / chondrocyte differentiation"),
+c("GO:0072143","mesangial cell development",0.028,19.8464,0.681,0.649,"developmental growth / chondrocyte differentiation"),
+c("GO:0048368","lateral mesoderm development",0.071,27.0801,0.671,0.601,"developmental growth / chondrocyte differentiation"),
+c("GO:0048863","stem cell differentiation",0.864,6.4005,0.768,0.295,"developmental growth / chondrocyte differentiation"),
+c("GO:0003223","ventricular compact myocardium morphogenesis",0.038,27.0801,0.617,0.687,"developmental growth / chondrocyte differentiation"),
+c("GO:0060272","embryonic skeletal joint morphogenesis",0.057,19.8464,0.660,0.575,"developmental growth / chondrocyte differentiation"),
+c("GO:0009791","post-embryonic development",0.598,10.5726,0.756,0.218,"developmental growth / chondrocyte differentiation"),
+c("GO:0007507","heart development",2.692,12.0653,0.612,0.621,"developmental growth / chondrocyte differentiation"),
+c("GO:0007492","endoderm development",0.399,7.7604,0.727,0.416,"developmental growth / chondrocyte differentiation"),
+c("GO:0003148","outflow tract septum morphogenesis",0.114,47.0573,0.634,0.494,"developmental growth / chondrocyte differentiation"),
+c("GO:0001757","somite specification",0.024,15.2946,0.653,0.649,"developmental growth / chondrocyte differentiation"),
+c("GO:0002062","chondrocyte differentiation",0.489,32.0849,0.638,0.424,"developmental growth / chondrocyte differentiation"),
+c("GO:0003170","heart valve development",0.218,33.0987,0.663,0.545,"developmental growth / chondrocyte differentiation"),
+c("GO:0003161","cardiac conduction system development",0.071,27.0801,0.642,0.502,"developmental growth / chondrocyte differentiation"),
+c("GO:1904707","positive regulation of vascular smooth muscle cell proliferation",0.062,13.6926,0.878,0.699,"developmental growth / chondrocyte differentiation"),
+c("GO:0008406","gonad development",1.068,9.4597,0.691,0.639,"developmental growth / chondrocyte differentiation"),
+c("GO:0060914","heart formation",0.119,23.2983,0.634,0.647,"developmental growth / chondrocyte differentiation"),
+c("GO:0001701","in utero embryonic development",2.061,25.7679,0.668,0.582,"developmental growth / chondrocyte differentiation"),
+c("GO:0006941","striated muscle contraction",0.717,20.3772,0.862,0.100,"developmental growth / chondrocyte differentiation"),
+c("GO:0060896","neural plate pattern specification",0.047,27.0801,0.764,0.443,"developmental growth / chondrocyte differentiation"),
+c("GO:0072498","embryonic skeletal joint development",0.066,15.9387,0.719,0.681,"developmental growth / chondrocyte differentiation"),
+c("GO:0009950","dorsal/ventral axis specification",0.081,23.1050,0.752,0.655,"developmental growth / chondrocyte differentiation"),
+c("GO:0042474","middle ear morphogenesis",0.114,8.0164,0.660,0.581,"developmental growth / chondrocyte differentiation"),
+c("GO:0042475","odontogenesis of dentin-containing tooth",0.427,9.8528,0.662,0.545,"developmental growth / chondrocyte differentiation"),
+c("GO:0042476","odontogenesis",0.565,12.9748,0.655,0.383,"developmental growth / chondrocyte differentiation"),
+c("GO:0009953","dorsal/ventral pattern formation",0.508,14.4828,0.720,0.579,"developmental growth / chondrocyte differentiation"),
+c("GO:0001657","ureteric bud development",0.513,52.9405,0.589,0.243,"developmental growth / chondrocyte differentiation"),
+c("GO:0001655","urogenital system development",1.657,12.4466,0.719,0.263,"developmental growth / chondrocyte differentiation"),
+c("GO:0009405","pathogenesis",0.014,1.5515,0.987,0.000,"pathogenesis"),
+c("GO:0031589","cell-substrate adhesion",1.396,29.6133,0.986,0.000,"cell-substrate adhesion"),
+c("GO:1902775","mitochondrial large ribosomal subunit assembly",0.014,21.0532,0.963,0.000,"rRNA processing"),
+c("GO:0034378","chylomicron assembly",0.009,18.6391,0.826,0.275,"rRNA processing"),
+c("GO:0006364","rRNA processing",0.864,2.2131,0.913,0.637,"rRNA processing"),
+c("GO:0045724","positive regulation of cilium assembly",0.104,6.4516,0.888,0.423,"rRNA processing"),
+c("GO:0006104","succinyl-CoA metabolic process",0.024,17.4310,0.953,0.008,"succinyl-CoA metabolism"),
+c("GO:0016310","phosphorylation",9.815,13.4316,0.926,0.502,"succinyl-CoA metabolism"),
+c("GO:0051865","protein autoubiquitination",0.275,2.0416,0.943,0.526,"succinyl-CoA metabolism"),
+c("GO:0018107","peptidyl-threonine phosphorylation",0.513,12.3814,0.928,0.248,"succinyl-CoA metabolism"),
+c("GO:0016925","protein sumoylation",0.214,12.3416,0.942,0.487,"succinyl-CoA metabolism"),
+c("GO:0046777","protein autophosphorylation",1.097,7.3556,0.926,0.467,"succinyl-CoA metabolism"),
+c("GO:0007178","transmembrane receptor protein serine/threonine kinase signaling pathway",1.501,47.0597,0.847,0.024,"BMP signaling pathway"),
+c("GO:0032927","positive regulation of activin receptor signaling pathway",0.047,23.6877,0.828,0.570,"BMP signaling pathway"),
+c("GO:0071300","cellular response to retinoic acid",0.266,10.5908,0.934,0.133,"BMP signaling pathway"),
+c("GO:0007218","neuropeptide signaling pathway",0.465,6.6858,0.904,0.180,"BMP signaling pathway"),
+c("GO:0032496","response to lipopolysaccharide",1.486,9.0454,0.939,0.605,"BMP signaling pathway"),
+c("GO:0010991","negative regulation of SMAD protein complex assembly",0.024,33.0987,0.815,0.492,"BMP signaling pathway"),
+c("GO:0030509","BMP signaling pathway",0.731,41.2048,0.781,0.677,"BMP signaling pathway"),
+c("GO:0060394","negative regulation of pathway-restricted SMAD protein phosphorylation",0.057,19.8336,0.782,0.675,"BMP signaling pathway"),
+c("GO:0014912","negative regulation of smooth muscle cell migration",0.090,27.0801,0.873,0.056,"regulation of cellular senescence / immune response"),
+c("GO:1905077","negative regulation of interleukin-17 secretion",0.014,25.8755,0.746,0.618,"regulation of cellular senescence / immune response"),
+c("GO:0008542","visual learning",0.280,9.0490,0.790,0.621,"regulation of cellular senescence / immune response"),
+c("GO:0034392","negative regulation of smooth muscle cell apoptotic process",0.028,13.4809,0.890,0.371,"regulation of cellular senescence / immune response"),
+c("GO:0090051","negative regulation of cell migration involved in sprouting angiogenesis",0.057,18.6391,0.611,0.629,"regulation of cellular senescence / immune response"),
+c("GO:2001244","positive regulation of intrinsic apoptotic signaling pathway",0.290,10.4110,0.836,0.428,"regulation of cellular senescence / immune response"),
+c("GO:2000666","negative regulation of interleukin-13 secretion",0.005,22.5172,0.760,0.639,"regulation of cellular senescence / immune response"),
+c("GO:1901165","positive regulation of trophoblast cell migration",0.014,24.1514,0.730,0.420,"regulation of cellular senescence / immune response"),
+c("GO:0043066","negative regulation of apoptotic process",4.032,4.2096,0.843,0.565,"regulation of cellular senescence / immune response"),
+c("GO:1905403","negative regulation of activated CD8-positive, alpha-beta T cell apoptotic process",0.021,25.8755,0.890,0.164,"regulation of cellular senescence / immune response"),
+c("GO:1905408","negative regulation of creatine transmembrane transporter activity",0.009,19.8464,0.882,0.286,"regulation of cellular senescence / immune response"),
+c("GO:1904468","negative regulation of tumor necrosis factor secretion",0.014,18.3880,0.744,0.678,"regulation of cellular senescence / immune response"),
+c("GO:0002829","negative regulation of type 2 immune response",0.052,25.8755,0.887,0.163,"regulation of cellular senescence / immune response"),
+c("GO:0035435","phosphate ion transmembrane transport",0.076,8.9446,0.959,0.546,"regulation of cellular senescence / immune response"),
+c("GO:2000772","regulation of cellular senescence",0.138,15.6042,0.731,0.371,"regulation of cellular senescence / immune response"),
+c("GO:0014066","regulation of phosphatidylinositol 3-kinase signaling",0.380,17.4310,0.882,0.238,"regulation of cellular senescence / immune response"),
+c("GO:0050706","regulation of interleukin-1 beta secretion",0.109,25.8755,0.744,0.277,"regulation of cellular senescence / immune response"),
+c("GO:0051464","positive regulation of cortisol secretion",0.019,10.1616,0.741,0.444,"regulation of cellular senescence / immune response"),
+c("GO:2000562","negative regulation of CD4-positive, alpha-beta T cell proliferation",0.024,25.8755,0.864,0.492,"regulation of cellular senescence / immune response"),
+c("GO:0030505","inorganic diphosphate transport",0.009,4.8558,0.964,0.592,"regulation of cellular senescence / immune response"),
+c("GO:0071650","negative regulation of chemokine (C-C motif) ligand 5 production",0.009,25.8755,0.771,0.441,"regulation of cellular senescence / immune response"),
+c("GO:1900425","negative regulation of defense response to bacterium",0.019,25.8755,0.891,0.320,"regulation of cellular senescence / immune response"),
+c("GO:0097191","extrinsic apoptotic signaling pathway",1.083,9.9006,0.849,0.672,"regulation of cellular senescence / immune response"),
+c("GO:0009966","regulation of signal transduction",11.729,16.3881,0.844,0.457,"regulation of cellular senescence / immune response"),
+c("GO:0006955","immune response",6.762,23.7592,0.948,0.380,"regulation of cellular senescence / immune response"),
+c("GO:0001662","behavioral fear response",0.195,11.1172,0.792,0.339,"regulation of cellular senescence / immune response"),
+c("GO:1902895","positive regulation of pri-miRNA transcription from RNA polymerase II promoter",0.095,34.7037,0.890,0.056,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0006366","transcription from RNA polymerase II promoter",8.913,4.2238,0.907,0.337,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0090502","RNA phosphodiester bond hydrolysis, endonucleolytic",0.299,3.8183,0.940,0.201,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0010628","positive regulation of mesenchymal cell proliferation",8.077,1.9301,0.867,0.641,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0045944","positive regulation of transcription from RNA polymerase II promoter",5.162,4.2909,0.845,0.566,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0007194","negative regulation of adenylate cyclase activity",0.090,10.1616,0.838,0.371,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0050679","positive regulation of epithelial cell proliferation",0.769,25.5471,0.864,0.195,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0090305","nucleic acid phosphodiester bond hydrolysis",1.125,2.2437,0.937,0.226,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0006525","arginine metabolic process",0.076,25.8755,0.909,0.120,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0000050","urea cycle",0.047,19.1874,0.916,0.306,"positive regulation of mesenchymal cell proliferation"),
+c("GO:1903426","regulation of reactive oxygen species biosynthetic process",0.323,18.5164,0.922,0.210,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0006099","tricarboxylic acid cycle",0.142,9.9226,0.913,0.454,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0002053","positive regulation of mesenchymal cell proliferation",0.176,18.6164,0.875,0.549,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0006398","mRNA 3'-end processing by stem-loop binding and cleavage",0.024,10.8306,0.945,0.167,"positive regulation of mesenchymal cell proliferation"),
+c("GO:0000082","G1/S transition of mitotic cell cycle",0.788,13.1410,0.938,0.066,"G1/S transition of mitotic cell cycle"),
+c("GO:0034616","response to laminar fluid shear stress",0.052,33.0987,0.963,0.084,"response to laminar fluid shear stress"));
+
+stuff <- data.frame(revigo.data);
+names(stuff) <- revigo.names;
+
+stuff$abslog10pvalue <- as.numeric( as.character(stuff$abslog10pvalue) );
+stuff$freqInDbPercent <- as.numeric( as.character(stuff$freqInDbPercent) );
+stuff$uniqueness <- as.numeric( as.character(stuff$uniqueness) );
+stuff$dispensability <- as.numeric( as.character(stuff$dispensability) );
+
+tmPlot(
+	stuff,
+	index = c("representative"),
+	vSize = "uniqueness",
+	type = "categorical",
+	vColor = "representative",
+	inflate.labels = FALSE,      
+	bg.labels = "#CCCCCCAA",
+	position.legend = "none",
+	mirror.x = TRUE,
+  mirror.y = TRUE,
+	fontsize.labels=15,
+  lowerbound.cex.labels = 0
+)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+

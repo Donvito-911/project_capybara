@@ -1,0 +1,161 @@
+#NEXUS
+begin taxa;
+	dimensions ntax=69;
+	taxlabels
+	Ctenomys_steinbachi
+	Ctenomys_boliviensis
+	Ctenomys_haigi
+	Octodon_bridgesi
+	Octodon_lunatus
+	Octodon_degus
+	Aconaemys_fuscus
+	Aconaemys_sagei
+	Aconaemys_porteri
+	Spalacopus_cyanus
+	Tympanoctomys_barrerae
+	Octomys_mimax
+	Octodontomys_gliroides
+	Euryzygomatomys_spinosus
+	Clyomys_laticeps
+	Trinomys_setosus
+	Trinomys_eliasi
+	Trinomys_dimidiatus
+	Trinomys_iheringi
+	Dactylomys_dactylinus
+	Dactylomys_boliviensis
+	Kannabateomys_amblyonyx
+	Toromys_grandis
+	Phyllomys_blainvilii
+	Echimys_chrysurus
+	Makalata_macrura
+	Phyllomys_brasiliensis
+	Makalata_didelphoides
+	Isothrix_sinnamariensis
+	Isothrix_bistriata
+	Lonchothrix_emiliae
+	Mesomys_hispidus
+	Thrichomys_apereoides
+	Proechimys_longicaudatus
+	Proechimys_roberti
+	Proechimys_simonsi
+	Proechimys_quadruplicatus
+	Hoplomys_gymnurus
+	Myocastor_coypus
+	Capromys_pilorides
+	Abrocoma_cinerea
+	Abrocoma_bennettii
+	Lagostomus_maximus
+	Chinchilla_lanigera
+	Lagidium_viscacia
+	Dinomys_branickii
+	Coendou_bicolor
+	Sphiggurus_melanura
+	Erethizon_dorsatum
+	Cuniculus_taczanowskii
+	Cuniculus_paca
+	Dasyprocta_leporina
+	Myoprocta_acouchy
+	Galea_musteloides
+	Cavia_tschudii
+	Cavia_porcellus
+	Cavia_aperea
+	Microcavia_australis
+	Dolichotis_patagonum
+	Kerodon_rupestris
+	Hydrochoerus_hydrochaeris
+	Petromus_typicus
+	Thryonomys_swinderianus
+	Heterocephalus_glaber
+	Heliophobius_argenteocinereus
+	Cryptomys_hottentotus
+	Bathyergus_suillus
+	Georychus_capensis
+	Hystrix_brachyurus
+;
+end;
+
+begin trees;
+	tree tree_1 = [&R] (((((((((Ctenomys_steinbachi:7.5112,Ctenomys_boliviensis:25.1844)[&!rotate=true,label="n8"]:11.2964,Ctenomys_haigi:13.0402)[&!rotate=true,label="n7"]:0.551018,((((Octodon_bridgesi:0.465391,Octodon_lunatus:0.465391)[&!rotate=true,label="n12"]:2.00302,Octodon_degus:1.87125)[&!rotate=true,label="n11"]:9.14054,(((Aconaemys_fuscus:0.203844,Aconaemys_sagei:0.203844)[&!rotate=true,label="n15"]:1.05854,Aconaemys_porteri:1.01741)[&!rotate=true,label="n14"]:1.43251,Spalacopus_cyanus:3.09875)[&!rotate=true,label="n13"]:3.56474)[&!rotate=true,label="n10"]:0.7142,((Tympanoctomys_barrerae:2.58861,Octomys_mimax:2.58861)[&!rotate=true,label="n17"]:8.33535,Octodontomys_gliroides:2.36571)[&!rotate=true,label="n16"]:3.74414)[&!rotate=true,label="n9"]:8.40192)[&!rotate=true,label="n6"]:5.56357,((((Euryzygomatomys_spinosus:2.26703,Clyomys_laticeps:0.894472)[&!rotate=true,label="n21"]:5.50732,((Trinomys_setosus:2.42982,Trinomys_eliasi:3.16451)[&!rotate=true,label="n23"]:0.297435,(Trinomys_dimidiatus:1.85287,Trinomys_iheringi:3.28545)[&!rotate=true,label="n24"]:1.46955)[&!rotate=true,label="n22"]:2.92984)[&!rotate=true,label="n20"]:3.68284,(((((Dactylomys_dactylinus:0.853961,Dactylomys_boliviensis:2.6672)[&!rotate=true,label="n29"]:6.43983,Kannabateomys_amblyonyx:0.317576)[&!rotate=true,label="n28"]:6.06488,(((Toromys_grandis:7.03889,Phyllomys_blainvilii:9.19425)[&!rotate=true,label="n32"]:0.466224,Echimys_chrysurus:6.39651)[&!rotate=true,label="n31"]:0.44957,(Makalata_macrura:1.97039,(Phyllomys_brasiliensis:6.25531,Makalata_didelphoides:3.11436)[&!rotate=true,label="n34"]:1.10838)[&!rotate=true,label="n33"]:0.2406)[&!rotate=true,label="n30"]:2.26885)[&!rotate=true,label="n27"]:2.80866,((Isothrix_sinnamariensis:6.70876,Isothrix_bistriata:7.29786)[&!rotate=true,label="n36"]:0.628532,(Lonchothrix_emiliae:5.32375,Mesomys_hispidus:1.89951)[&!rotate=true,label="n37"]:12.0145)[&!rotate=true,label="n35"]:2.351)[&!rotate=true,label="n26"]:0.721259,((Thrichomys_apereoides:0.17751,(((Proechimys_longicaudatus:0.965187,Proechimys_roberti:2.28697)[&!rotate=true,label="n42"]:2.08872,(Proechimys_simonsi:3.21727,Proechimys_quadruplicatus:2.06724)[&!rotate=true,label="n43"]:0.619707)[&!rotate=true,label="n41"]:2.72398,Hoplomys_gymnurus:4.89322)[&!rotate=true,label="n40"]:1.25161)[&!rotate=true,label="n39"]:0.510732,Myocastor_coypus:40.6218)[&!rotate=true,label="n38"]:0.362276)[&!rotate=true,label="n25"]:2.98584)[&!rotate=true,label="n19"]:0.631874,Capromys_pilorides:31.2052)[&!rotate=true,label="n18"]:1.42046)[&!rotate=true,label="n5"]:2.61956,(Abrocoma_cinerea:5.09453,Abrocoma_bennettii:4.41938)[&!rotate=true,label="n44"]:3.23113)[&!rotate=true,label="n4"]:19.4535,((Lagostomus_maximus:9.67105,(Chinchilla_lanigera:13.3075,Lagidium_viscacia:3.48138)[&!rotate=true,label="n47"]:10.1764)[&!rotate=true,label="n46"]:1.28097,Dinomys_branickii:18.6294)[&!rotate=true,label="n45"]:12.2736)[&!rotate=true,label="n3"]:2.08336,(((Coendou_bicolor:4.91861,Sphiggurus_melanura:12.1225)[&!rotate=true,label="n50"]:1.40945,Erethizon_dorsatum:8.59617)[&!rotate=true,label="n49"]:8.19846,((Cuniculus_taczanowskii:0.908528,Cuniculus_paca:0.908528)[&!rotate=true,label="n52"]:18.8012,((Dasyprocta_leporina:10.6963,Myoprocta_acouchy:7.3861)[&!rotate=true,label="n54"]:2.96458,((Galea_musteloides:4.44937,(((Cavia_tschudii:1.4829,Cavia_porcellus:4.57344)[&!rotate=true,label="n59"]:6.80153,Cavia_aperea:16.7187)[&!rotate=true,label="n58"]:0.171503,Microcavia_australis:9.41606)[&!rotate=true,label="n57"]:3.48289)[&!rotate=true,label="n56"]:17.0632,(Dolichotis_patagonum:36.59,(Kerodon_rupestris:2.57449,Hydrochoerus_hydrochaeris[&!color=#-65536]:56.9516)[&!rotate=true,label="n61"]:0.803884)[&!rotate=true,label="n60"]:4.77884)[&!rotate=true,label="n55"]:9.10255)[&!rotate=true,label="n53"]:3.16163)[&!rotate=true,label="n51"]:1.9164)[&!rotate=true,label="n48"]:8.08555)[&!rotate=true,label="n2"]:2.77024,((Petromus_typicus:5.82562,Thryonomys_swinderianus:37.1881)[&!rotate=true,label="n63"]:1.94905,(Heterocephalus_glaber:13.125,(Heliophobius_argenteocinereus:0.992394,(Cryptomys_hottentotus:4.67301,(Bathyergus_suillus:42.9582,Georychus_capensis:0.710521)[&!rotate=true,label="n67"]:1.70941)[&!rotate=true,label="n66"]:0.240012)[&!rotate=true,label="n65"]:2.16389)[&!rotate=true,label="n64"]:8.12796)[&!rotate=true,label="n62"]:15.4733)[&!rotate=true,label="n1"]:4.63158,Hystrix_brachyurus:11.5715)[&!rotate=true,label="n0"];
+end;
+
+begin figtree;
+	set appearance.backgroundColorAttribute="Default";
+	set appearance.backgroundColour=#-1;
+	set appearance.branchColorAttribute="User selection";
+	set appearance.branchLineWidth=2.0;
+	set appearance.branchMinLineWidth=0.0;
+	set appearance.branchWidthAttribute="Fixed";
+	set appearance.foregroundColour=#-16777216;
+	set appearance.selectionColour=#-2144520576;
+	set branchLabels.colorAttribute="User selection";
+	set branchLabels.displayAttribute="Branch times";
+	set branchLabels.fontName="sansserif";
+	set branchLabels.fontSize=8;
+	set branchLabels.fontStyle=0;
+	set branchLabels.isShown=false;
+	set branchLabels.significantDigits=4;
+	set layout.expansion=0;
+	set layout.layoutType="RECTILINEAR";
+	set layout.zoom=0;
+	set legend.attribute="label";
+	set legend.fontSize=10.0;
+	set legend.isShown=false;
+	set legend.significantDigits=4;
+	set nodeBars.barWidth=4.0;
+	set nodeBars.displayAttribute=null;
+	set nodeBars.isShown=false;
+	set nodeLabels.colorAttribute="User selection";
+	set nodeLabels.displayAttribute="Node ages";
+	set nodeLabels.fontName="sansserif";
+	set nodeLabels.fontSize=8;
+	set nodeLabels.fontStyle=0;
+	set nodeLabels.isShown=false;
+	set nodeLabels.significantDigits=4;
+	set nodeShape.colourAttribute="User selection";
+	set nodeShape.isShown=false;
+	set nodeShape.minSize=10.0;
+	set nodeShape.scaleType=Width;
+	set nodeShape.shapeType=Circle;
+	set nodeShape.size=4.0;
+	set nodeShape.sizeAttribute="Fixed";
+	set polarLayout.alignTipLabels=false;
+	set polarLayout.angularRange=0;
+	set polarLayout.rootAngle=0;
+	set polarLayout.rootLength=100;
+	set polarLayout.showRoot=true;
+	set radialLayout.spread=0.0;
+	set rectilinearLayout.alignTipLabels=false;
+	set rectilinearLayout.curvature=0;
+	set rectilinearLayout.rootLength=100;
+	set scale.offsetAge=0.0;
+	set scale.rootAge=1.0;
+	set scale.scaleFactor=1.0;
+	set scale.scaleRoot=false;
+	set scaleAxis.automaticScale=true;
+	set scaleAxis.fontSize=8.0;
+	set scaleAxis.isShown=false;
+	set scaleAxis.lineWidth=1.0;
+	set scaleAxis.majorTicks=1.0;
+	set scaleAxis.origin=0.0;
+	set scaleAxis.reverseAxis=false;
+	set scaleAxis.showGrid=true;
+	set scaleBar.automaticScale=true;
+	set scaleBar.fontSize=10.0;
+	set scaleBar.isShown=true;
+	set scaleBar.lineWidth=1.0;
+	set scaleBar.scaleRange=0.0;
+	set tipLabels.colorAttribute="User selection";
+	set tipLabels.displayAttribute="Names";
+	set tipLabels.fontName="sansserif";
+	set tipLabels.fontSize=9;
+	set tipLabels.fontStyle=0;
+	set tipLabels.isShown=true;
+	set tipLabels.significantDigits=4;
+	set trees.order=false;
+	set trees.orderType="increasing";
+	set trees.rooting=false;
+	set trees.rootingType="User Selection";
+	set trees.transform=false;
+	set trees.transformType="cladogram";
+end;
+

@@ -1,0 +1,52 @@
+==================================================
+file name: capybara_07Aug2016_eky8L.fasta
+sequences:        625482
+total length: 2737697943 bp  (2734339343 bp excl N/X-runs)
+GC level:         39.76 %
+bases masked: 1025212797 bp ( 37.45 %)
+==================================================
+               number of      length   percentage
+               elements*    occupied  of sequence
+--------------------------------------------------
+SINEs:            1356064    148332777 bp    5.42 %
+      Alu/B1      302989     33639777 bp    1.23 %
+      B2-B4       175522     17724578 bp    0.65 %
+      IDs         385921     32120577 bp    1.17 %
+      MIRs        235897     31929144 bp    1.17 %
+
+LINEs:            970174    595489133 bp   21.75 %
+      LINE1       809367    560259123 bp   20.46 %
+      LINE2       134492     30573722 bp    1.12 %
+      L3/CR1       19782      3541474 bp    0.13 %
+
+LTR elements:     591621    191355816 bp    6.99 %
+      ERVL        106764     34304119 bp    1.25 %
+      ERVL-MaLRs  349160    116169275 bp    4.24 %
+      ERV_classI   60225     24417071 bp    0.89 %
+      ERV_classII  63336     13322033 bp    0.49 %
+
+DNA elements:     225819      47810326bp    1.75 %
+      hAT-Charlie 120915     23832851 bp    0.87 %
+      TcMar-Tigger 45820     11627242 bp    0.42 %
+
+Unclassified:      12046      1579609 bp    0.06 %
+
+Total interspersed repeats: 984567661 bp   35.96 %
+
+
+Small RNA:         26069      2047428 bp    0.07 %
+
+Satellites:         6761      1326725 bp    0.05 %
+Simple repeats:   709641     32059509 bp    1.17 %
+Low complexity:   116894      6307823 bp    0.23 %
+==================================================
+
+* most repeats fragmented by insertions or deletions
+  have been counted as one element
+                                                      
+
+The query species was assumed to be rodentia      
+RepeatMasker version open-4.0.5 , default mode
+                                   
+run with rmblastn version 2.2.27+
+RepBase Update 20140131, RM database version 20140131

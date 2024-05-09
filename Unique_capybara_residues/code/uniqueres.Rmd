@@ -1,0 +1,233 @@
+---
+title: "Unique-capybara residues"
+author: "Santiago Herrera-Alvarez"
+date: "September 9, 2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    highlight: kate
+geometry: margin=2cm
+fontsize: 10pt
+---
+
+```{r knitr, echo=FALSE}
+knitr::opts_chunk$set(
+  comment   = "#",
+  results   = "hold",
+  # collapse  = TRUE,
+  fig.align = "center",
+  cache=FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy= TRUE,
+  tidy.opts=list(width.cutoff=80))
+```
+
+```{r, warning=FALSE,message=FALSE}
+library(ggplot2)
+library(biomaRt)
+```
+
+
+## PRANK alignments
+
+Genes to the right of the red-dashed line represent the top 5% genes with highest concentration of unique-capybara residues based on MSA's among 9 rodent species spanning the three main clades within Rodentia.
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+tbl <- read.csv("../Unique_residues_index_PRANK.out",sep="\t",header=FALSE)
+tbl2 <- tbl[!(tbl$V4 == 'NA  '),]
+i <- tbl2$V4
+i <- as.numeric(levels(i))[i]
+
+tbl2$index <- i
+
+ggplot(data=tbl2, aes(tbl2$index)) + geom_histogram()+ labs(x="Residue-concentration index", y="frecuency") + geom_vline(aes(xintercept=quantile(i,0.95),colour="red"),linetype="dashed")+theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle("Distribution of proteins according to unique residues in capybara")
+
+mask <- i > quantile(i,0.95)
+tbl3 <- tbl2[mask,]
+```
+
+GO enrichment test of top 5% proteins with high capybara-unique residue concentration.
+
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+##GO enrichment: GOA Slim terms
+ensembl=useMart("ensembl")
+ensembl_cavia=useMart("ensembl",dataset="cporcellus_gene_ensembl")
+genes_cavia <- tbl2$V3
+genes_cavia <- gsub("\\.[0-9]+","",genes_cavia)
+all_cavia <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(genes_cavia),mart=ensembl_cavia)
+
+gpigIDs <- tbl3$V3
+gpigIDs <- gsub("\\.[0-9]+","",gpigIDs)
+genesTop5_cuyb <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(gpigIDs),mart=ensembl_cavia)
+
+all_GOs <- all_cavia$goslim_goa_description
+out_GOs <- genesTop5_cuyb$goslim_goa_description
+unique_out_GOs <- unique(genesTop5_cuyb$goslim_goa_description)
+fisherPvalues_out <- c()
+GO_term <- c()
+
+for(i in 1:length(unique_out_GOs)){
+  a <- sapply(unique_out_GOs[i],function(x) sum(x==out_GOs))
+  b <- sapply(unique_out_GOs[i],function(x) sum(x==all_GOs))
+  c <- length(out_GOs)-a
+  d <- length(all_GOs)-b
+  f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")
+  GO_term <- c(GO_term,as.character(unique_out_GOs[i]))
+  fisherPvalues_out <- c(fisherPvalues_out,f$p.value)
+}
+fisherPvalues_out_Bonferroni <- p.adjust(fisherPvalues_out,method="bonferroni",n=length(fisherPvalues_out))
+out_fisherResults <- data.frame(GO_term,fisherPvalues_out,fisherPvalues_out_Bonferroni)
+significativas_out <- out_fisherResults[out_fisherResults$fisherPvalues_out_Bonferroni<0.05,]
+
+significativas_out
+
+
+##GO Enrichment: GO terms
+all_GOs <- all_cavia$go_id
+out_GOs <- genesTop5_cuyb$go_id
+unique_out_GOs_ids <- unique(genesTop5_cuyb$go_id)
+fisherPvalues_out <- c()
+GO_id <- c()
+
+for(i in 1:length(unique_out_GOs_ids)){
+  a <- sapply(unique_out_GOs_ids[i],function(x) sum(x==out_GOs))
+  b <- sapply(unique_out_GOs_ids[i],function(x) sum(x==all_GOs))
+  c <- length(out_GOs)-a
+  d <- length(all_GOs)-b
+  f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")
+  GO_id <- c(GO_id,as.character(unique_out_GOs_ids[i]))
+  fisherPvalues_out <- c(fisherPvalues_out,f$p.value)
+}
+fisherPvalues_out_Bonferroni <- p.adjust(fisherPvalues_out,method="bonferroni",n=length(fisherPvalues_out))
+out_fisherResults <- data.frame(GO_id,fisherPvalues_out,fisherPvalues_out_Bonferroni)
+significativas_out2 <- out_fisherResults[out_fisherResults$fisherPvalues_out_Bonferroni<0.05,]
+```
+
+TreeMap from REVIGO for GO biological processes terms represented by genes with high capybara-unique residues (top 5%). Rectangle size reflects semantic uniqueness of GO term, which measures the degree to which the term is an outlier when compared semantically to the list of terms present in the mouse.
+
+```{r,echo=FALSE}
+library(treemap) 								# treemap package by Martijn Tennekes
+
+# Set the working directory if necessary
+# setwd("C:/Users/username/workingdir");
+
+# --------------------------------------------------------------------------
+# Here is your data from REVIGO. Scroll down for plot configuration options.
+
+revigo.names <- c("term_ID","description","freqInDbPercent","abslog10pvalue","uniqueness","dispensability","representative");
+revigo.data <- rbind(c("GO:0000723","telomere maintenance",0.541,19.1663,0.753,0.000,"telomere maintenance"),
+c("GO:0001933","negative regulation of protein phosphorylation",1.871,5.1659,0.802,0.569,"telomere maintenance"),
+c("GO:0007144","female meiosis I",0.038,11.3149,0.856,0.684,"telomere maintenance"),
+c("GO:0090305","nucleic acid phosphodiester bond hydrolysis",1.125,5.1476,0.885,0.239,"telomere maintenance"),
+c("GO:1901985","positive regulation of protein acetylation",0.161,19.1663,0.868,0.105,"telomere maintenance"),
+c("GO:0006525","arginine metabolic process",0.076,18.2956,0.831,0.137,"telomere maintenance"),
+c("GO:0007140","male meiosis",0.223,11.3149,0.844,0.695,"telomere maintenance"),
+c("GO:0000038","very long-chain fatty acid metabolic process",0.142,11.3149,0.823,0.459,"telomere maintenance"),
+c("GO:0008299","isoprenoid biosynthetic process",0.133,12.1895,0.801,0.397,"telomere maintenance"),
+c("GO:0016559","peroxisome fission",0.052,10.4395,0.904,0.259,"telomere maintenance"),
+c("GO:0000045","autophagosome assembly",0.347,5.4963,0.924,0.577,"telomere maintenance"),
+c("GO:0000050","urea cycle",0.047,18.2956,0.838,0.306,"telomere maintenance"),
+c("GO:0008202","steroid metabolic process",1.163,8.6953,0.798,0.495,"telomere maintenance"),
+c("GO:0033138","positive regulation of peptidyl-serine phosphorylation",0.489,8.9719,0.851,0.487,"telomere maintenance"),
+c("GO:0099072","regulation of postsynaptic specialization membrane neurotransmitter receptor levels",0.043,11.3149,0.921,0.241,"telomere maintenance"),
+c("GO:1903426","regulation of reactive oxygen species biosynthetic process",0.323,18.2956,0.880,0.161,"telomere maintenance"),
+c("GO:0099590","neurotransmitter receptor internalization",0.024,11.3149,0.824,0.182,"telomere maintenance"),
+c("GO:0043649","dicarboxylic acid catabolic process",0.052,10.4395,0.846,0.588,"telomere maintenance"),
+c("GO:0006629","lipid metabolic process",5.594,16.2337,0.843,0.281,"telomere maintenance"),
+c("GO:0007268","chemical synaptic transmission",2.602,2.9037,0.893,0.150,"telomere maintenance"),
+c("GO:0051092","positive regulation of NF-kappaB transcription factor activity",0.508,3.4686,0.831,0.242,"telomere maintenance"),
+c("GO:0042391","regulation of membrane potential",1.819,8.1891,0.901,0.340,"telomere maintenance"),
+c("GO:0006667","sphinganine metabolic process",0.014,8.6855,0.814,0.487,"telomere maintenance"),
+c("GO:0007528","neuromuscular junction development",0.237,11.3149,0.904,0.168,"telomere maintenance"),
+c("GO:0030239","myofibril assembly",0.290,13.0634,0.805,0.506,"telomere maintenance"),
+c("GO:0045225","negative regulation of CD4 biosynthetic process",0.005,10.4395,0.860,0.231,"telomere maintenance"),
+c("GO:0042760","very long-chain fatty acid catabolic process",0.024,11.3149,0.826,0.542,"telomere maintenance"),
+c("GO:0051694","pointed-end actin filament capping",0.033,13.0634,0.812,0.250,"telomere maintenance"),
+c("GO:0048239","negative regulation of DNA recombination at telomere",0.014,19.1663,0.808,0.437,"telomere maintenance"),
+c("GO:0060081","membrane hyperpolarization",0.057,8.1891,0.914,0.608,"telomere maintenance"),
+c("GO:0001676","long-chain fatty acid metabolic process",0.423,8.8655,0.795,0.671,"telomere maintenance"),
+c("GO:0051899","membrane depolarization",0.418,11.3149,0.904,0.293,"telomere maintenance"),
+c("GO:0000712","resolution of meiotic recombination intermediates",0.071,11.3149,0.773,0.558,"telomere maintenance"),
+c("GO:0023019","signal transduction involved in regulation of gene expression",0.104,6.2686,0.871,0.148,"telomere maintenance"),
+c("GO:0042438","melanin biosynthetic process",0.085,12.1895,0.810,0.369,"telomere maintenance"),
+c("GO:0006941","striated muscle contraction",0.717,16.0758,0.905,0.000,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0007631","feeding behavior",0.570,6.0435,0.974,0.644,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0007369","gastrulation",0.893,6.5214,0.836,0.221,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0050877","neurological system process",10.271,5.6068,0.894,0.491,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0048263","determination of dorsal identity",0.047,10.4395,0.870,0.171,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0002002","regulation of angiotensin levels in blood",0.043,2.4811,0.820,0.279,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0042074","cell migration involved in gastrulation",0.085,6.5214,0.816,0.574,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0019226","transmission of nerve impulse",0.347,5.0608,0.852,0.334,"growth plate cartilage chondrocyte proliferation"),
+c("GO:2000381","negative regulation of mesoderm development",0.043,10.4395,0.847,0.344,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0021612","facial nerve structural organization",0.047,10.4395,0.856,0.386,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0048646","anatomical structure formation involved in morphogenesis",4.920,2.6572,0.886,0.493,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0003419","growth plate cartilage chondrocyte proliferation",0.019,10.4395,0.847,0.324,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0070307","lens fiber cell development",0.066,13.0634,0.839,0.439,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0043588","skin development",1.296,3.8564,0.840,0.322,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0021570","rhombomere 4 development",0.014,10.4395,0.855,0.571,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0021546","rhombomere development",0.038,10.4395,0.853,0.236,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0030282","bone mineralization",0.508,8.0258,0.840,0.425,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0048704","embryonic skeletal system morphogenesis",0.475,2.7658,0.820,0.671,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0021754","facial nucleus development",0.009,10.4395,0.864,0.557,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0009952","anterior/posterior pattern specification",1.059,4.5224,0.841,0.654,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0009653","anatomical structure morphogenesis",11.586,6.1470,0.898,0.294,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0001657","ureteric bud development",0.513,15.0922,0.839,0.122,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0008344","adult locomotory behavior",0.465,6.4721,0.879,0.172,"growth plate cartilage chondrocyte proliferation"),
+c("GO:0043473","pigmentation",0.446,10.0886,0.953,0.000,"pigmentation"),
+c("GO:0070198","protein localization to chromosome, telomeric region",0.128,19.1663,0.910,0.000,"protein localization to chromosome, telomeric region"),
+c("GO:1905077","negative regulation of interleukin-17 secretion",0.014,18.2956,0.749,0.639,"protein localization to chromosome, telomeric region"),
+c("GO:0006816","calcium ion transport",1.752,5.4179,0.890,0.508,"protein localization to chromosome, telomeric region"),
+c("GO:0071650","negative regulation of chemokine (C-C motif) ligand 5 production",0.009,18.2956,0.814,0.441,"protein localization to chromosome, telomeric region"),
+c("GO:2000666","negative regulation of interleukin-13 secretion",0.005,18.2956,0.763,0.577,"protein localization to chromosome, telomeric region"),
+c("GO:0001579","medium-chain fatty acid transport",0.009,11.3149,0.873,0.692,"protein localization to chromosome, telomeric region"),
+c("GO:2000311","regulation of alpha-amino-3-hydroxy-5-methyl-4-isoxazole propionate selective glutamate receptor activity",0.095,8.6884,0.790,0.391,"protein localization to chromosome, telomeric region"),
+c("GO:0098970","postsynaptic neurotransmitter receptor diffusion trapping",0.009,11.3149,0.884,0.250,"protein localization to chromosome, telomeric region"),
+c("GO:0015908","fatty acid transport",0.347,11.3149,0.847,0.306,"protein localization to chromosome, telomeric region"),
+c("GO:0098943","neurotransmitter receptor transport, postsynaptic endosome to lysosome",0.009,11.3149,0.911,0.396,"protein localization to chromosome, telomeric region"),
+c("GO:1904468","negative regulation of tumor necrosis factor secretion",0.014,11.1390,0.746,0.678,"protein localization to chromosome, telomeric region"),
+c("GO:0050709","negative regulation of protein secretion",0.565,14.8093,0.771,0.675,"protein localization to chromosome, telomeric region"),
+c("GO:0050706","regulation of interleukin-1 beta secretion",0.109,18.2956,0.757,0.290,"protein localization to chromosome, telomeric region"),
+c("GO:0006914","autophagy",1.605,3.1236,0.970,0.015,"autophagy"),
+c("GO:0002829","negative regulation of type 2 immune response",0.052,18.2956,0.834,0.037,"negative regulation of type 2 immune response"),
+c("GO:0008543","fibroblast growth factor receptor signaling pathway",0.332,8.6855,0.871,0.465,"negative regulation of type 2 immune response"),
+c("GO:0034157","positive regulation of toll-like receptor 7 signaling pathway",0.009,14.8093,0.838,0.412,"negative regulation of type 2 immune response"),
+c("GO:0048538","thymus development",0.266,9.8951,0.826,0.289,"negative regulation of type 2 immune response"),
+c("GO:2000562","negative regulation of CD4-positive, alpha-beta T cell proliferation",0.024,18.2956,0.831,0.492,"negative regulation of type 2 immune response"),
+c("GO:1901224","positive regulation of NIK/NF-kappaB signaling",0.185,6.6215,0.854,0.225,"negative regulation of type 2 immune response"),
+c("GO:0009566","fertilization",0.845,11.3149,0.912,0.466,"negative regulation of type 2 immune response"),
+c("GO:1900425","negative regulation of defense response to bacterium",0.019,18.2956,0.850,0.320,"negative regulation of type 2 immune response"),
+c("GO:0045071","negative regulation of viral genome replication",0.209,11.6840,0.889,0.173,"negative regulation of type 2 immune response"),
+c("GO:0007264","small GTPase mediated signal transduction",2.009,2.3625,0.876,0.388,"negative regulation of type 2 immune response"),
+c("GO:0051607","defense response to virus",0.969,5.7918,0.887,0.521,"negative regulation of type 2 immune response"),
+c("GO:1905403","negative regulation of activated CD8-positive, alpha-beta T cell apoptotic process",0.021,18.2956,0.880,0.149,"negative regulation of type 2 immune response"),
+c("GO:0043123","positive regulation of I-kappaB kinase/NF-kappaB signaling",0.760,3.7992,0.840,0.550,"negative regulation of type 2 immune response"),
+c("GO:0032926","negative regulation of activin receptor signaling pathway",0.052,10.4395,0.824,0.341,"negative regulation of type 2 immune response"),
+c("GO:0009615","response to virus",1.244,4.1946,0.941,0.659,"negative regulation of type 2 immune response"),
+c("GO:0035582","sequestering of BMP in extracellular matrix",0.019,10.4395,0.729,0.662,"negative regulation of type 2 immune response"),
+c("GO:2000774","positive regulation of cellular senescence",0.038,18.2956,0.807,0.342,"negative regulation of type 2 immune response"));
+
+stuff <- data.frame(revigo.data);
+names(stuff) <- revigo.names;
+
+stuff$abslog10pvalue <- as.numeric( as.character(stuff$abslog10pvalue) );
+stuff$freqInDbPercent <- as.numeric( as.character(stuff$freqInDbPercent) );
+stuff$uniqueness <- as.numeric( as.character(stuff$uniqueness) );
+stuff$dispensability <- as.numeric( as.character(stuff$dispensability) );
+
+tmPlot(
+	stuff,
+	index = c("representative"),
+	vSize = "uniqueness",
+	type = "categorical",
+	vColor = "representative",
+	inflate.labels = FALSE,      
+	bg.labels = "#CCCCCCAA",
+	position.legend = "none",
+	mirror.x = TRUE,
+  mirror.y = TRUE,
+	fontsize.labels=15,
+  lowerbound.cex.labels = 0
+)
+```

@@ -1,0 +1,223 @@
+setwd("~/Desktop/BIOMICS/TESIS_MAESTRIA/COMPARATIVE_GENOMICS/Pairwise_dnds/Cap-Cuy")
+dnds_filt <- read.csv("pairwise_dnds_Gpig-Capybara_filteredAlignments.out",sep="\t",header=F)#
+#
+dnds_filt2 <- dnds_filt[!(dnds_filt$V3 == 'NA  '),]#
+omega <- dnds_filt2$V3#
+omega <- as.numeric(levels(omega))[omega]#
+mask <- omega > 1#
+mayor1filt <- dnds_filt2[mask,]
+mayor1filt[mayor1filt$ensembl_peptide_id=="ENSCPOP00000005631",]
+head(mayor1filt)
+mayor1filt[V2=="ENSCPOP00000005631",]
+mayor1filt[mayor1filt$V2=="ENSCPOP00000005631",]
+setwd("~/Desktop/BIOMICS/TESIS_MAESTRIA/COMPARATIVE_GENOMICS/Pairwise_dnds/Cap-Cuy")
+dnds_filt <- read.csv("pairwise_dnds_Gpig-Capybara_filteredAlignments.out",sep="\t",header=F)
+head(dnds_filt)
+dnds_filt2 <- dnds_filt[!(dnds_filt$V3 == 'NA  '),]
+omega <- dnds_filt2$V3
+omega <- as.numeric(levels(omega))[omega]
+mask <- omega > 1
+mayor1filt <- dnds_filt2[mask,]
+mayor1filt
+gPigIDs <- mayor1filt$V2
+library(biomaRt)#
+ensembl=useMart("ensembl")#
+ensembl_cavia=useMart("ensembl",dataset="cporcellus_gene_ensembl")
+genesMayor1 <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(gPigIDs),mart=ensembl_cavia)
+dnds_filt2
+dim(dnds_filt2)
+head(dnds_filt2)
+todos <- dnds_filt2$V2
+head(todos)
+genesTodos <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(todos),mart=ensembl_cavia)
+all_GOs <- genesTodos$goslim_goa_description#
+out_GOs <- genesMayor1$goslim_goa_description#
+unique_out_GOs <- unique(genesMayor1$goslim_goa_description)#
+fisherPvalues_out <- c()#
+GO_term <- c()
+for(i in 1:length(unique_out_GOs)){#
+	a <- sapply(unique_out_GOs[i],function(x) sum(x==out_GOs))#
+	b <- sapply(unique_out_GOs[i],function(x) sum(x==all_GOs))#
+	c <- length(out_GOs)-a#
+	d <- length(all_GOs)-b#
+	f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")#
+  	GO_term <- c(GO_term,as.character(unique_out_GOs[i]))#
+  	fisherPvalues_out <- c(fisherPvalues_out,f$p.value)#
+}#
+fisherPvalues_out_Bonferroni <- p.adjust(fisherPvalues_out,method="bonferroni",n=length(fisherPvalues_out))#
+out_fisherResults <- data.frame(GO_term,fisherPvalues_out,fisherPvalues_out_Bonferroni)#
+significativas_out <- out_fisherResults[out_fisherResults$fisherPvalues_out_Bonferroni<0.05,]
+significativas_out
+getwd()
+write.csv(significativas_out,"go_enrichment_test.csv",quote=FALSE)
+setwd("~/Desktop/BIOMICS/TESIS_MAESTRIA/COMPARATIVE_GENOMICS/Pairwise_dnds/Cap-Cuy-Rat")#
+dnds_filt <- read.csv("pairwise_dnds_Gpig-Capybara-Rat_filteredAlignments.out",sep="\t",header=F)#
+#
+dnds_filt2 <- dnds_filt[!(dnds_filt$V4 == 'NA  '),]#
+omegaGPR <- dnds_filt2$V5#
+omegaGPR <- as.numeric(levels(omegaGPR))[omegaGPR]#
+#
+omegaCGP <- dnds_filt2$V4#
+omegaCGP <- as.numeric(levels(omegaCGP))[omegaCGP]#
+#
+ratio2 <- c()#
+for(i in 1:length(omegaCGP)){#
+	temp <- omegaCGP[i]/omegaGPR[i]#
+	if(temp == "NaN"){#
+		temp <- 0#
+	}#
+	ratio2 <- c(ratio2,temp)#
+}#
+#
+dnds_filt2$ratio2 <- ratio2
+head(dnds_filt2)
+mask <- ratio2 > quantile(ratio2,0.95)#
+top5b <- dnds_filt2[mask,]
+todos <- dnds_filt2$V2#
+genesTodos <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(todos),mart=ensembl_cavia)
+head(top5b)
+top5 <- top5b$V2
+genesTop5 <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(top5),mart=ensembl_cavia)
+all_GOs <- genesTodos$goslim_goa_description#
+out_GOs <- genesTop5$goslim_goa_description#
+unique_out_GOs <- unique(genesTop5$goslim_goa_description)#
+fisherPvalues_out <- c()#
+GO_term <- c()#
+#
+for(i in 1:length(unique_out_GOs)){#
+	a <- sapply(unique_out_GOs[i],function(x) sum(x==out_GOs))#
+	b <- sapply(unique_out_GOs[i],function(x) sum(x==all_GOs))#
+	c <- length(out_GOs)-a#
+	d <- length(all_GOs)-b#
+	f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")#
+  	GO_term <- c(GO_term,as.character(unique_out_GOs[i]))#
+  	fisherPvalues_out <- c(fisherPvalues_out,f$p.value)#
+}#
+fisherPvalues_out_Bonferroni <- p.adjust(fisherPvalues_out,method="bonferroni",n=length(fisherPvalues_out))#
+out_fisherResults <- data.frame(GO_term,fisherPvalues_out,fisherPvalues_out_Bonferroni)#
+significativas_out <- out_fisherResults[out_fisherResults$fisherPvalues_out_Bonferroni<0.05,]
+significativas_out
+getwd()
+write.csv(significativas_out,"go_enrichment.csv",quote=FALSE)
+dim(significativas_out)
+setwd("~/Desktop/BIOMICS/TESIS_MAESTRIA/COMPARATIVE_GENOMICS/Pairwise_dnds/Cap-Cuy-Rat")#
+dnds_filt <- read.csv("pairwise_dnds_Gpig-Capybara-Rat_filteredAlignments.out",sep="\t",header=F)#
+#
+dnds_filt2 <- dnds_filt[!(dnds_filt$V4 == 'NA  '),]#
+omegaGPR <- dnds_filt2$V5#
+omegaGPR <- as.numeric(levels(omegaGPR))[omegaGPR]#
+#
+omegaCGP <- dnds_filt2$V4#
+omegaCGP <- as.numeric(levels(omegaCGP))[omegaCGP]
+max(omegaGPR)
+head(dnds_filt2)
+head(omegaCGP)
+length(omegaCGP)
+omegaCGP[1]
+omegaCGP[1]/max(omegaGPR)
+ratio <- omegaCGP/max(omegaGPR)
+head(ratio)
+dnds_filt2$ratio <- ratio
+head(dnds_filt1)
+head(dnds_filt2)
+mask <- ratio > quantile(ratio,0.95)#
+top5 <- dnds_filt2[mask,]
+top5
+mask
+head(dnds_filt2,12)
+0.565668943788/max(omegaGPR)
+max(omegaGPR)
+0.565668943788/0.9047567
+setwd("~/Desktop/BIOMICS/TESIS_MAESTRIA/COMPARATIVE_GENOMICS/Pairwise_dnds/Cap-Cuy-Rat")#
+dnds_filt <- read.csv("pairwise_dnds_Gpig-Capybara-Rat_filteredAlignments.out",sep="\t",header=F)#
+#
+dnds_filt2 <- dnds_filt[!(dnds_filt$V4 == 'NA  '),]#
+omegaGPR <- dnds_filt2$V5#
+omegaGPR <- as.numeric(levels(omegaGPR))[omegaGPR]#
+#
+omegaCGP <- dnds_filt2$V4#
+omegaCGP <- as.numeric(levels(omegaCGP))[omegaCGP]#
+#
+ratio <- omegaCGP/max(omegaGPR)#
+#
+dnds_filt2$ratio <- ratio
+mask <- ratio > quantile(ratio,0.95)#
+top5 <- dnds_filt2[mask,]
+?order
+head(top5)
+dim(top5)
+top5[order(top5$ratio,decreasing=TRUE),]
+write.table(top5[order(top5$ratio,decreasing=TRUE),],"top5_pairwise_dnds.txt")
+write.table(top5[order(top5$ratio,decreasing=TRUE),],"top5_pairwise_dnds.txt",quote=FALSE,sep="\t")
+?write.table
+write.table(top5[order(top5$ratio,decreasing=TRUE),],"top5_pairwise_dnds.txt",quote=FALSE,sep="\t",dec = ",")
+head(top5)
+head(top5[order(top5$ratio,decreasing=TRUE),])
+setwd("/Volumes/Seagate Backup Plus Drive/Emergency Backup/Desktop/PROYECTOS/Capybara_gigantism_Project/COMPARATIVE_GENOMICS/Pairwise_dnds/Cap-Cuy-Rat")
+dnds_filt <- read.csv("pairwise_dnds_Gpig-Capybara-Rat_filteredAlignments.out",sep="\t",header=F)
+dnds_filt2 <- dnds_filt[!(dnds_filt$V4 == 'NA  '),]#
+omegaGPR <- dnds_filt2$V5#
+omegaGPR <- as.numeric(levels(omegaGPR))[omegaGPR]#
+#
+omegaCGP <- dnds_filt2$V4#
+omegaCGP <- as.numeric(levels(omegaCGP))[omegaCGP]#
+#
+ratio <- omegaCGP/max(omegaGPR)#
+#
+dnds_filt2$ratio <- ratio
+head(dnds_filt2)
+library(ggplot2)
+ggplot(data=dnds_filt2, aes(dnds_filt2$ratio)) + geom_histogram()+ labs(x="Capybara-GuineaPig dN/dS vs higher GuineaPig-Rat dN/dS", y="frecuency") + geom_vline(aes(xintercept=quantile(ratio,0.95),colour="red"),linetype="dashed")+theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=13))
+mask <- ratio > quantile(ratio,0.95)#
+top5 <- dnds_filt2[mask,]
+top5
+setwd("/Volumes/Seagate Backup Plus Drive/Emergency Backup/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/Capybara_gigantism_GitHub_repo/Pairwise_dnds")
+Hi Robert, #
+#
+Thank you so much for writing, I am very glad you have found useful our work. Dental evolution patterns within caviomorphs are certainly very interesting, I was very intrigued about this topic while compiling literature for the project. #
+#
+Right now we are working on the submission process but it has not been accepted yet, thus, for now would be only the pre-print. #
+#
+I am a PhD student at UChicago too (first year E&E, though), what a small world! I will be very looking forward to attending to your dissertation. Feel free to reach out if you have additional questions regarding our results. #
+#
+Thank you again,
+dnds <- read.csv("../Capybara-GuineaPig/pairwise_dnds_Gpig-Capybara_filteredAlignments.out", #
+    sep = "\t", header = F)
+getwd("")
+getwd()
+dnds <- read.csv("../Capybara-GuineaPig/pairwise_dnds_Gpig-Capybara_filteredAlignments.out", sep = "\t", header = F)
+setwd("/Volumes/Seagate Backup Plus Drive/Emergency Backup/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/Capybara_gigantism_GitHub_repo/Pairwise_dnds/code")
+dnds <- read.csv("../Capybara-GuineaPig/pairwise_dnds_Gpig-Capybara_filteredAlignments.out", sep = "\t", header = F)
+dnds_filt <- dnds[!(dnds$V3 == "NA  "), ]#
+#
+# Extract orhologs with dN/dS value > 1#
+omega <- dnds_filt$V3#
+omega <- as.numeric(levels(omega))[omega]#
+mask <- omega > 1#
+above1 <- dnds_filt[mask, ]
+read.csv("../Capybara-GuineaPig/dnds_above_1_pairwise_GuineaPig_Capybara.csv")
+setwd("/Volumes/Seagate Backup Plus Drive/Emergency Backup/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/Capybara_gigantism_GitHub_repo/Positive_selection/code")
+d <- read.csv("Volumes/Seagate Backup Plus Drive/Emergency Backup/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/Capybara_gigantism_GitHub_repo/Positive_selection/LRs-PDI.xlsx")
+d <- read.csv("/Volumes/Seagate Backup Plus Drive/Emergency Backup/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/Capybara_gigantism_GitHub_repo/Positive_selection/LRs-PDI.xlsx")
+d <- read.table("/Volumes/Seagate Backup Plus Drive/Emergency Backup/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/Capybara_gigantism_GitHub_repo/Positive_selection/LRs-PDI.xlsx")
+head(d)
+d <- read.table("/Volumes/Seagate Backup Plus Drive/Emergency Backup/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/Capybara_gigantism_GitHub_repo/Positive_selection/LRs-PDI.xlsx",h=TRUE,sep="\t")
+d <- read.table("/Volumes/Seagate Backup Plus Drive/Emergency Backup/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/Capybara_gigantism_GitHub_repo/Positive_selection/LRs-PDI.xlsx",h=TRUE)
+head(d)
+t <- read.csv("../LRs-dists.csv", h = TRUE)#
+#
+# Quick and exploratory plot of Tamura-Nei distance vs, raw-p distance. Note the#
+# tight positive correlation between both measures.#
+d <- t$DNA_tamura.nei.D#
+d <- as.numeric(levels(d))[d]#
+t$D_TN <- d#
+dp <- t$prot_pdistance#
+dp <- as.numeric(levels(dp))[dp]#
+t$D_prot <- dp#
+t2 <- t[complete.cases(t), ]#
+t2 <- t2[!(t2$LR < 0), ]
+t2
+labels = t2[t2$LR >= quantile(t2$LR, 0.95) & t2$D_prot >= quantile(t2$D_prot, 0.95), #
+    ]
+labels
+dim(labels)

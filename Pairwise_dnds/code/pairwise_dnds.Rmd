@@ -1,0 +1,189 @@
+---
+title: "Pairwise $d_N/d_S$ analysis" 
+author: "Santiago Herrera-Alvarez"
+date: "September 9, 2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    highlight: kate
+geometry: margin=2cm
+fontsize: 10pt
+---
+
+```{r knitr, echo=FALSE}
+knitr::opts_chunk$set(
+  comment   = "#",
+  results   = "hold",
+  # collapse  = TRUE,
+  fig.align = "center",
+  cache=FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy= TRUE,
+  tidy.opts=list(width.cutoff=80))
+```
+
+```{r}
+library(ggplot2)
+library(biomaRt)
+```
+
+# Pairwise $d_N/d_S$ analysis and GO enrichment test: Capybara - Guinea pig
+
+Pairwise comparisons between guinea pig and capybara could provide insights into the genes underlying capybara???s large size, as well as insights into other adaptive differences between species. 
+
+We calculated pairwise  $d_N/d_S$ ratios of each gene within genomes to look for signs of positive selection. A total of 11,255 single-copy gene orthologs (SCOs) between guinea pig and capybara where obtained with the OrthoFinder software v.1.1.4 (Emms and Kelly, 2015). Specific Biopython (Cock et al., 2009) and PyCogent (Knight et al., 2007) modules where used to estimate dN/dS values for each SCO. *NOTE: $d_N/d_S$ ratios were calculated with the Python script `dnds_pairwise.py`. The output `pairwise_dnds_Gpig-Capybara_filteredAlignments.out`, contains the following information: capybara gene id, guinea pig ensembl protein id, computed ratio. Both files are available in the Capybara-GuineaPig folder*
+
+To perform the GO enrichment test, we used the guinea pig Ensembl protein id of each ortholog to extract the relevant information using biomaRt package.
+
+Below, is the list of genes with a $d_N/d_S$ value > 1:
+
+```{r}
+dnds <- read.csv("../Capybara-GuineaPig/pairwise_dnds_Gpig-Capybara_filteredAlignments.out",sep="\t",header=F)
+
+#Exclude orthologs with ratio = NA: alignments with a trimmed length below 50% of the original alignment length. 
+dnds_filt <- dnds[!(dnds$V3 == 'NA  '),]
+
+#Extract orhologs with dN/dS value > 1
+omega <- dnds_filt$V3
+omega <- as.numeric(levels(omega))[omega]
+mask <- omega > 1
+above1 <- dnds_filt[mask,]
+
+#Genes with dN/dS > 1
+
+read.csv("../Capybara-GuineaPig/dnds_above_1_pairwise_GuineaPig_Capybara.csv")
+```
+
+## Computation of GO enrichment test for genes that showed a $d_N/d_S$ value > 1
+
+```{r}
+#Choose Guinea pig Ensembl database
+ensembl=useMart("ensembl")
+ensembl_cavia=useMart("ensembl",dataset="cporcellus_gene_ensembl")
+
+#Extract GO annotations for ALL genes
+all_ids <- dnds_filt$V2
+genesAll <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(all_ids),mart=ensembl_cavia)
+
+#Extract GO annotations for genes with dN/dS ratio > 1
+gPigIDs <- above1$V2
+genesAbove1 <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(gPigIDs),mart=ensembl_cavia)
+
+#Fisher's exact test (GO enrichment test)
+all_GOs <- genesAll$goslim_goa_description
+out_GOs <- genesAbove1$goslim_goa_description
+unique_out_GOs <- unique(genesAbove1$goslim_goa_description)
+fisherPvalues_out <- c()
+GO_term <- c()
+
+for(i in 1:length(unique_out_GOs)){
+	a <- sapply(unique_out_GOs[i],function(x) sum(x==out_GOs))
+	b <- sapply(unique_out_GOs[i],function(x) sum(x==all_GOs))
+	c <- length(out_GOs)-a
+	d <- length(all_GOs)-b
+	f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")
+  	GO_term <- c(GO_term,as.character(unique_out_GOs[i]))
+  	fisherPvalues_out <- c(fisherPvalues_out,f$p.value)
+}
+fisherPvalues_out_Bonferroni <- p.adjust(fisherPvalues_out,method="bonferroni",n=length(fisherPvalues_out))
+out_fisherResults <- data.frame(GO_term,fisherPvalues_out,fisherPvalues_out_Bonferroni)
+significativas_out <- out_fisherResults[out_fisherResults$fisherPvalues_out_Bonferroni<0.05,]
+
+print(significativas_out)
+```
+
+
+# Pairwise $d_N/d_S$ analysis and GO enrichment test: Capybara - Guinea pig - Rat
+
+In addition, we calculated the ratios of the capybara-guinea pig $d_N/d_S$ values to the higher of the $d_N/d_S$ values between guinea pig-rat, on a set of 8,084 SCOs, to identify genes that evolved more rapidly on the capybara lineage. *NOTE: $d_N/d_S$ ratios were calculated with the Python script `dnds_pairwise.py`. The output `pairwise_dnds_Gpig-Capybara-Rat_filteredAlignments.out`, contains the following information: capybara gene id, guinea pig ensembl protein id, rat ensembl protein id, $d_N/d_S$ ratio Cap-GuiPig, $d_N/d_S$ ratio GuiPig-Rat. Both files are available in the Capybara-GuineaPig-Rat folder*
+
+```{r}
+dnds2 <- read.csv("../Capybara-GuineaPig-Rat/pairwise_dnds_Gpig-Capybara-Rat_filteredAlignments.out",sep="\t",header=F)
+
+#Exclude orthologs with ratio = NA: alignments with a trimmed length below 50% of the original alignment length. 
+dnds_filt2 <- dnds2[!(dnds2$V4 == 'NA  '),]
+
+#Extract pairwise dN/dS values for Guinea pig-Rat comparisons
+omegaGPR <- dnds_filt2$V5
+omegaGPR <- as.numeric(levels(omegaGPR))[omegaGPR]
+
+#Extract pairwise dN/dS values for Capybara-Guinea pig comparisons
+omegaCGP <- dnds_filt2$V4
+omegaCGP <- as.numeric(levels(omegaCGP))[omegaCGP]
+
+#Compute ratios
+ratio <- omegaCGP/max(omegaGPR)
+##ratio <- c()
+#for(i in 1:length(omegaCGP)){
+#  temp <- omegaCGP[i]/omegaGPR[i]
+#  if(temp == "NaN"){
+#    temp <- 0
+#  }
+#  ratio <- c(ratio,temp)
+#}
+dnds_filt2$ratio <- ratio
+
+#Extract genes on the top 5% of the distribution of ratios
+mask <- ratio > quantile(ratio,0.95)
+top5 <- dnds_filt2[mask,]
+
+#Plot the distribution of ratios, showing the cutoff (red line) of 95%
+ggplot(data=dnds_filt2, aes(dnds_filt2$ratio)) + geom_histogram()+ labs(x="Capybara-GuineaPig dN/dS vs GuineaPig-Rat dN/dS", y="frecuency") + geom_vline(aes(xintercept=quantile(ratio,0.95),colour="red"),linetype="dashed")+theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=13))
+```
+
+
+## Computation of GO enrichment test for genes on the top 5%
+```{r}
+#Extract GO annotations for ALL genes using Guinea Pig Ensembl protein id's
+all_ids_GPig <- dnds_filt2$V2
+genesAll_GPig <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(all_ids_GPig),mart=ensembl_cavia)
+
+#Extract GO annotations for genes on top 5%
+top5_ids_GPig <- top5$V2
+genesTop5 <- getBM(attributes=c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description"),filters="ensembl_peptide_id",values=as.character(top5_ids_GPig),mart=ensembl_cavia)
+
+all_GOs_GPig <- genesAll_GPig$goslim_goa_description
+out_GOs_GPig <- genesTop5$goslim_goa_description
+unique_out_GOs <- unique(genesTop5$goslim_goa_description)
+fisherPvalues_out <- c()
+GO_term <- c()
+
+for(i in 1:length(unique_out_GOs)){
+	a <- sapply(unique_out_GOs[i],function(x) sum(x==out_GOs_GPig))
+	b <- sapply(unique_out_GOs[i],function(x) sum(x==all_GOs_GPig))
+	c <- length(out_GOs_GPig)-a
+	d <- length(all_GOs_GPig)-b
+	f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")
+  	GO_term <- c(GO_term,as.character(unique_out_GOs[i]))
+  	fisherPvalues_out <- c(fisherPvalues_out,f$p.value)
+}
+fisherPvalues_out_Bonferroni <- p.adjust(fisherPvalues_out,method="bonferroni",n=length(fisherPvalues_out))
+out_fisherResults <- data.frame(GO_term,fisherPvalues_out,fisherPvalues_out_Bonferroni)
+significativas_out2 <- out_fisherResults[out_fisherResults$fisherPvalues_out_Bonferroni<0.05,]
+
+significativas_out2
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

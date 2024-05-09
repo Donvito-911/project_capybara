@@ -1,0 +1,341 @@
+plot(tr2, edge.color=clcolr, edge.width=2,show.tip.label=FALSE,xlim=c(0,100))
+?plot.phylo
+plot(tr2, edge.color=clcolr, edge.width=2,show.tip.label=FALSE,x.lim=c(0,100))
+plot(tr2, edge.color=clcolr, edge.width=2,show.tip.label=FALSE,x.lim=c(0,80))
+plot(tr2, edge.color=clcolr, edge.width=5,show.tip.label=FALSE,x.lim=c(0,80))
+clcolr <- rep("black", dim(tr2$edge)[1])
+cap <- clcolr[which.edge(tr2, "Capybara")] <- "red" #specifying color of branches in clade (A, B, C)
+plot(tr2, edge.color=clcolr, edge.width=5,show.tip.label=FALSE,x.lim=c(0,80))
+plot(tr2, edge.color=clcolr, edge.width=3.5,show.tip.label=FALSE,x.lim=c(0,80))
+clcolr <- rep("black", dim(tr2$edge)[1])
+plot(tr2, edge.color=clcolr, edge.width=3.5,show.tip.label=FALSE,x.lim=c(0,80))
+tr <- read.tree("~/Desktop/BIOMICS/TESIS_MAESTRIA/COMPARATIVE_GENOMICS/Phylogenomics/MCMCTREE_Hystricognathi/OrthoMaM_370-SCOs_5genomes_alignment_conNs_sinArreglar_Gblocks_RAxML.result.tre")
+library(phytools)
+tr <- read.tree("~/Desktop/BIOMICS/TESIS_MAESTRIA/COMPARATIVE_GENOMICS/Phylogenomics/MCMCTREE_Hystricognathi/OrthoMaM_370-SCOs_5genomes_alignment_conNs_sinArreglar_Gblocks_RAxML.result.tre")
+plot(tr)
+clcolr <- rep("black", dim(tr$edge)[1])
+clcolr[which.edge(tr, "Capybara")] <- "red"
+plot(tr, edge.color=clcolr, edge.width=3.5, x.lim=c(0,80))
+plot(tr, edge.color=clcolr, edge.width=3.5, x.lim=c(0,20),show.tip.label=FALSE)
+plot(tr, edge.color=clcolr, edge.width=3.5, x.lim=c(0,15),show.tip.label=FALSE)
+clcolr <- rep("black", dim(tr$edge)[1])
+plot(tr, edge.color=clcolr, edge.width=3.5, x.lim=c(0,15),show.tip.label=FALSE)
+library(phytools)
+tr <- read.tree("~/Desktop/BIOMICS/TESIS_MAESTRIA/COMPARATIVE_GENOMICS/Phylogenomics/MCMCTREE1/OrthoMaM_370-SCOs_17genomes_alignment_conNs_sinArreglar_Gblocks_RAxML.result.tre")
+plot(tr)
+nodelabels()
+hyst <- tips(tr, node=30)#
+mrc <- tips(tr, node=22)#
+src <- tips(tr, node=21)#
+#
+which.edge(rot.phy, cladeABC)#
+clcolr <- rep("black", dim(tr$edge)[1]) #
+clcolr[hyst] <- "red"#
+clcolr[mrc] <- "lightblue"#
+clcolr[src] <- "orange" #specifying color of branches in clade (A, B, C)#
+plot(tr, edge.color=clcolr, edge.width=2,type="fan")
+hyst <- tips(tr, node=30)#
+mrc <- tips(tr, node=22)#
+src <- tips(tr, node=21)#
+#
+which.edge(rot.phy, cladeABC)#
+clcolr <- rep("black", dim(tr$edge)[1]) #
+clcolr[which.edge(tr, hyst)] <- "red"#
+clcolr[which.edge(tr, mrc)] <- "lightblue"#
+clcolr[which.edge(tr, src)] <- "orange" #
+plot(tr, edge.color=clcolr, edge.width=2,type="fan",show.tip.label=FALSE)
+hyst <- tips(tr, node=30)
+library(geiger)
+hyst <- tips(tr, node=30)
+hyst <- tips(tr, node=30)#
+mrc <- tips(tr, node=22)#
+src <- tips(tr, node=21)#
+#
+which.edge(rot.phy, cladeABC)#
+clcolr <- rep("black", dim(tr$edge)[1]) #
+clcolr[which.edge(tr, hyst)] <- "red"#
+clcolr[which.edge(tr, mrc)] <- "lightblue"#
+clcolr[which.edge(tr, src)] <- "orange" #
+plot(tr, edge.color=clcolr, edge.width=2,type="fan",show.tip.label=FALSE)
+plot(tr, edge.color=clcolr, edge.width=3.5,type="fan",show.tip.label=FALSE,use.edge.length=FALSE)
+?plot.phylo
+plot(tr, edge.color=clcolr, edge.width=3.5,type="fan",show.tip.label=FALSE,use.edge.length=FALSE)
+plot(tr, edge.color=clcolr, edge.width=3.5,show.tip.label=FALSE,use.edge.length=FALSE)
+plot(tr, edge.color=clcolr, edge.width=3.5,show.tip.label=FALSE)
+plotTree(tr, edge.color=clcolr,show.tip.label=FALSE,type="fan")
+?paintSubTree
+tr2 <- paintSubTree(tr,node=30)#
+tr2 <- paintSubTree(tr, node=22)#
+tr2 <- paintSubTree(tr, node=21)#
+plotTree(tr2, edge.color=clcolr,show.tip.label=FALSE,type="fan")
+tr2 <- paintSubTree(tr,node=30)
+tr2 <- paintSubTree(tr,node=30,state="1")#
+tr2 <- paintSubTree(tr, node=22,state="2")#
+tr2 <- paintSubTree(tr, node=21,state="3")#
+plotTree(tr2, edge.color=clcolr,show.tip.label=FALSE,type="fan")
+tr2 <- paintSubTree(tr,node=30,state="2")#
+tr2 <- paintSubTree(tr, node=22,state="3")#
+tr2 <- paintSubTree(tr, node=21,state="4")#
+cols<-c("black","blue","red","orange"); names(cols)<-1:4
+plotTree(tr2, edge.color=clcolr,show.tip.label=FALSE,type="fan")
+plotTree(tr2,cols,show.tip.label=FALSE,type="fan")
+plotSimmap(tr2,cols,show.tip.label=FALSE,type="fan")
+tr2 <- paintSubTree(tr,node=30,state="2",stem=T)#
+tr2 <- paintSubTree(tr, node=22,state="3",stem=T)#
+tr2 <- paintSubTree(tr, node=21,state="4",stem=T)#
+cols<-c("black","blue","red","orange"); names(cols)<-1:4
+plotSimmap(tr2,cols,type="fan")
+plot(tr)
+nodelabels()
+tr2 <- paintSubTree(tr,node=30,state="2",stem=T)#
+tr2 <- paintSubTree(tr2, node=22,state="3",stem=T)#
+tr2 <- paintSubTree(tr2, node=21,state="4",stem=T)#
+cols<-c("black","blue","red","orange"); names(cols)<-1:4#
+plotSimmap(tr2,cols,type="fan")
+plotSimmap(tr2,cols,type="fan",pts=F)
+?plotSimmap
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=0)
+plotSimmap(tr2,cols,type="fan",pts=F)
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=1)
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=5)
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=2)
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=0.1)
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=0.01)
+tr2 <- paintSubTree(tr,node=30,state="2",stem=T)#
+tr2 <- paintSubTree(tr2, node=22,state="3",stem=T)#
+tr2 <- paintSubTree(tr2, node=21,state="4",stem=T)#
+cols<-c("black","coral","golden","lightblue"); names(cols)<-1:4#
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=0.01,lwd=3.5)
+cols<-c("black","coral","goldenrod","lightblue"); names(cols)<-1:4
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=0.01,lwd=3.5)
+cols<-c("black","coral","goldenrod","purple"); names(cols)<-1:4
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=0.01,lwd=3.5)
+cols<-c("black","coral","chocolate","purple"); names(cols)<-1:4
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=0.01,lwd=3.5)
+cols<-c("black","red","chocolate","purple"); names(cols)<-1:4
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=0.01,lwd=3.5)
+cols<-c("black","red","chocolate","orange"); names(cols)<-1:4
+plotSimmap(tr2,cols,type="fan",pts=F,fsize=0.01,lwd=3.5)
+y <- rnorm(100,1,0.5)
+y <- rnorm(100,3,0.7)
+x <- rnorm(100,1,0.5)
+linea <- lm(y~x)
+summary(linea)
+library(ape)
+tr <- read.tree("~/Dropbox/Peter-Santiago/Birds_Consensus_tree_Jetz.tre")
+plot(tr)
+plot(tr,cex=0.5)
+t <- read.csv("~/Documents/Santiago/Universidad/Maestria/Asistencias/Evolución_LAB/Selección Sexual/male_heterozygosity.xlsx")
+t <- read.table("~/Documents/Santiago/Universidad/Maestria/Asistencias/Evolución_LAB/Selección Sexual/male_heterozygosity.xlsx")
+t <- read.csv("~/Documents/Santiago/Universidad/Maestria/Asistencias/Evolución_LAB/Selección Sexual/male_heterozygosity.csv")
+head(t)
+plot(t$heterozygosity,t$ARS)
+linea <- lm(t$ARS~)t$heterozygosity
+linea <- lm(t$ARS~t$heterozygosity)
+summary(linea)
+abline(linea)
+a <- rnorm(100,10,1)
+b <- rnorm(100,30,1)
+c <- rnorm(100,50,1)
+boxplot(a,b,c)
+a <- rnorm(100,10,3)
+b <- rnorm(100,30,4)
+c <- rnorm(100,50,4)
+boxplot(a,b,c)
+b <- rnorm(100,30,5)
+c <- rnorm(100,50,7)
+boxplot(a,b,c)
+b <- rnorm(100,40,5)
+boxplot(a,b,c)
+boxplot(a,b,c,col="gray")
+?barplot
+barplot(c(10,40,50))
+anova <- aov(a,b,c)
+d <- c(a,b,c)
+x <- c(rep(a,100),rep(b,100),rep(c,100))
+dat <- data.frame(d,x)
+head(dat)
+x <- c(rep("a",100),rep("b",100),rep("c",100))
+dat <- data.frame(d,x)
+head(dat)
+dat
+anova <- aov(dat$d~dat$x)
+summary(anova)
+anova
+plot(a,b)
+plot(a,b,pch=16)
+mod1 <- lm(b~a)
+plot(a,b,pch=16)
+abline(mod1)
+plot(a,c,pch=16)
+plot(a,b,pch=16)
+abline(mod1)
+summary(mod1)
+library(ggplot2)
+t <- read.csv("~/Documents/Santiago/Universidad/Maestria/Asistencias/Evolución_LAB/Evolución_experimental/datos_corrida_nov17_2017.csv")
+head(t)
+ggplot(t,aes(t_min,V_rep1))+geom_point()+geom_smooth()
+ggplot(t,aes(t_min,V_rep1))+geom_point()+geom_smooth(span=0.5)
+ggplot(t,aes(t_min,V_rep1))+geom_point()+geom_smooth(span=1.0)
+datosS <- lowess(t$t_min, t$V_rep1, f=0.2, iter=5)
+datosS2 <- lowess(t$t_min, t$V_rep1, f=0.5, iter=5)
+datosS3 <- lowess(t$t_min, t$V_rep1, f=0.9, iter=5)
+par(mfcol=c(1,3))#
+plot(datos$x,datos$y, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.2",cex.main=1.5) #
+points(datosS$x, datosS$y, type="l",lwd=3) #
+plot(datos$x,datos$y, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.5",cex.main=1.5) #
+points(datosS2$x, datosS2$y, type="l", col="red",lwd=3) #
+plot(datos$x,datos$y, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.9",cex.main=1.5) #
+points(datosS3$x, datosS3$y, type="l", col="blue",lwd=3)
+head(datosS3 )
+par(mfcol=c(1,3))#
+plot(t$t_min, t$V_rep1, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.2",cex.main=1.5) #
+points(datosS$x, datosS$y, type="l",lwd=3) #
+plot(t$t_min, t$V_rep1, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.5",cex.main=1.5) #
+points(datosS2$x, datosS2$y, type="l", col="red",lwd=3) #
+plot(t$t_min, t$V_rep1, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.9",cex.main=1.5) #
+points(datosS3$x, datosS3$y, type="l", col="blue",lwd=3)
+datosS <- lowess(t$t_min, t$V_rep1, f=0.2, iter=5)#
+datosS2 <- lowess(t$t_min, t$V_rep1, f=0.1, iter=5)#
+datosS3 <- lowess(t$t_min, t$V_rep1, f=0.05, iter=5)#
+#
+par(mfcol=c(1,3))#
+plot(t$t_min, t$V_rep1, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.2",cex.main=1.5) #
+points(datosS$x, datosS$y, type="l",lwd=3) #
+plot(t$t_min, t$V_rep1, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.1",cex.main=1.5) #
+points(datosS2$x, datosS2$y, type="l", col="red",lwd=3) #
+plot(t$t_min, t$V_rep1, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.05",cex.main=1.5) #
+points(datosS3$x, datosS3$y, type="l", col="blue",lwd=3)
+datosS <- lowess(t$t_min, t$V_rep2, f=0.2, iter=5)#
+datosS2 <- lowess(t$t_min, t$V_rep2, f=0.1, iter=5)#
+datosS3 <- lowess(t$t_min, t$V_rep2, f=0.05, iter=5)#
+#
+par(mfcol=c(1,3))#
+plot(t$t_min, t$V_rep2, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.2",cex.main=1.5) #
+points(datosS$x, datosS$y, type="l",lwd=3) #
+plot(t$t_min, t$V_rep2, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.1",cex.main=1.5) #
+points(datosS2$x, datosS2$y, type="l", col="red",lwd=3) #
+plot(t$t_min, t$V_rep2, pch=19, cex=0.7,col="black",ylab="Y",xlab="X",main="f = 0.05",cex.main=1.5) #
+points(datosS3$x, datosS3$y, type="l", col="blue",lwd=3)
+t22 <- read.csv("~/Documents/Santiago/Universidad/Maestria/Asistencias/Evolución_LAB/Evolución_experimental/comp_22.csv")
+head(t22)
+v22 <- lm(t22$V22~t22$tiempo_min)
+v22 <- lm(t22$v22~t22$tiempo_min)
+wt <- lm(t22$wt~t22$tiempo_min)
+plot(t22$tiempo_min,t22$wt,pch=16)
+plot(t22$tiempo_min,t22$wt,pch=16,ylim=max(c(t22$v22,t22$wt)))
+plot(t22$tiempo_min,t22$wt,pch=16,ylim=c(0,max(c(t22$v22,t22$wt))))
+abline(wt)
+points(t22$tiempo_min,t22$v22,pch=16,col="red")
+abline(v22,col="red")
+summary(v22)
+summary(vwt)
+summary(wt)
+library(geepack)
+library(phytools)
+packageVersion("phytools")
+library(phytools)
+tr <- "((Ictidomys:0.5024569995,Marmota:0.5002457005):1.621199325,((Castor:0.7903716212,Dipodomys:0.7988175688):0.8611486488,(((((DeerMouse:0.8442942936,Vole:0.8367867864):0.144679057,Hamster:0.841807433):1.049179537,(Mus:0.5070270272,Rattus:0.5037837828):1.086631276):1.161148648,BMRat:0.5831081074):1.027162162,Jerboa:0.7451351356):1.102364864):0.4085304053,((((Chinchilla:0.77953668,Degu:0.69073359):0.6168399185,(Capybara:0.539279281,Cavia:0.558018019):1.185862787):0.6241554035,NMRat:0.7123310815):1.688935812,Oryctolagus:1.144172298):0.2720439185);"
+tree <- read.tree(text=tr)
+tree <- root(tree,outgroup="Oryctolagus")
+plot(tree)
+text <- "((A,B),C)"
+library(phytools)
+tr <- read.tree(text=text)
+plotTree(tr,lwd=3)
+class(tr)
+?read.tree
+text <- "((A,B),C);"
+tr <- read.tree(text=text)
+class(tr)
+plotTree(tr,lwd=3)
+plotTree(tr,lwd=6)
+library(phytools)#
+library(strap)#
+#
+tree<-pbtree(b=0.03,d=0.01,n=200)#
+h<-max(nodeHeights(tree))#
+tree$root.time <- h#
+geoscalePhylo(tree=ladderize(tree,right=FALSE),units=c("Period", "Epoch"),boxes="Period",cex.tip=0.7,cex.age=0.7,cex.ts=0.7,label.offset=0, lwd=3, width=2,quat.rm=TRUE)
+library(phytools)
+text="(((((Castor:0.03916987671055027764,Dipodomys:0.06097184603747655279)100:0.00811787877817336280,(Jerboa:0.05238585376608641958,(BMRat:0.03857592859164763605,((Mus:0.01891248474018716527,Rattus:0.02033282466659460178)100:0.01593615822464728576,((Hamster:0.02358653017936484728,Vole:0.02456887545267840214)100:0.00260097968944944958,DeerMouse:0.01909028778065548215)100:0.00605789045741264229)100:0.02082440838940729025)100:0.01267522460335445550)100:0.01154692120125914122)100:0.00544984341345422160,(NMRat:0.03592627668386438183,((Chinchilla:0.02222038177091602285,Degu:0.03420427550714125881)100:0.00438185522396082258,(Capybara:0.02360289976642429566,Cavia:0.02024878843692622804)100:0.01710594906702958898)100:0.00755113840117217511)100:0.03240026407153463739)8:0.00385233209646152321,(Marmota:0.00597838709862271497,Ictidomys:0.00520888012117983346)100:0.03548832238641699832):0.03154202363352887756,Oryctolagus:0.03154202363352887756);"
+tr <- read.tree(text=text)
+plotTree(tr)
+tr
+plotTree(tr)
+shownodelabels()
+?nodelabels
+?plot.phylo
+plot(tr,show.node.label=TRUE)
+t <- read.table("~/Desktop/BIOMICS/TESIS_MAESTRIA/Capybara_genome/PAPER_gigantism/figures_tables/Tables_with_genes/Capybara_Expanded_Families.xlsx")
+t <- read.txt("~/Desktop/BIOMICS/TESIS_MAESTRIA/Capybara_genome/PAPER_gigantism/figures_tables/Tables_with_genes/Capybara_Expanded_Families.xlsx")
+new <- c("Cd8a","Rps10","Mrpl55","Tpt1","Rgs2","Pmch","Snrnp40","Selp","Galr1","Rln3","Taar1","Pigm","Polr2g","Sfi1","Spop","Ins1","Pik3r2","Xcl1","Cxcl13","Hsp90aa1","Ctss","Prkci","Cd69","Ube2n","Nrxn3","Parp2","Bcl2","Cox19","Lep","Ccl19","Rps2","Actrt1","Hdac8","Eif2ak2","Rhebl1","Il12a","Prdx1","Cd24a","Asb4","Slirp","Nrxn1","Cd4","Cd48","Gtpbp10","Cyp8b1","Scgb3a1","Ptger2","Clrn3","Tia1","Rfx6","Qrfpr","Mrpl27","Gna14","Ppy","Cd9","Dpm2","Prcc","Dzip1","Dctn6","Hoxb1","Nedd1","Fgf22","Cd40","Gzmb","Bmf","Coa5","Bcl2l14","Scgn","Rsad2","Rnd1","Ftl1","Nxph3","Apoa1","Cox5a","Socs4","Hes1","Bpifb1","Arg2","Cacng2","Plagl2")
+old <- c("Rps10","Rps2","mt-Nd4l","Bcl2","Cd8a","Rpl21","Rpl10l","Insr","Mrpl55","Tpt1","Trp53","Rgs2","Igf2","Pmch","Snrnp40","Selp","Galr1","Rln3","Taar1","Pigm","Polr2g","Xcl1","Spop","Sfi1","Ins1","Pik3r2","Cxcl13","Pom121","Hsp90aa1","Ctss","Prkci","Eef1a1","Cd69","Ube2n","Nrxn3","Parp2","Cox19","Lep","Ccl19","Rps3a","Actrt1","Hdac8","Igll1","Eif2ak2","Rhebl1","Il12a","Prdx1","Cd24a","Apoa1","Asb4","Slirp","Nrxn1","Cd4","Prdm1","Gtpbp10","Cd48","Smad6","Gbp6","Cyp8b1","Scgb3a1","Clrn3","Ptger2","Tia1","Rfx6","Qrfpr","mt-Nd4","Mrpl27","Gna14","Ppy","Sp1","Cd9","Dpm2","Prcc","Dzip1","Nedd1","Dctn6","Fgf22","Sp100","Hoxb1","Socs4","Cd40","Gzmb","Bmf","Coa5","Bcl2l14","Scgn","Rsad2","Rnd1","Ftl1","Id2","Nxph3","Plagl2","Tyr","Cox5a","Cer1","Hes1","Bpifb1","Chmp4c","Arg2","Cacng2")
+v <- intersect(old,new)
+v
+length(v)
+v <- intersect(new,old)
+v
+length(v)
+v2 <- outersect(new,old)
+v2 <- setdiff(new,old)
+v2
+?setdiff
+v2 <- setdiff(old,neew)
+v2 <- setdiff(old,new)
+v2
+v
+for(i in 1:1000){}
+?rnorm
+?ln
+??ln
+a <- rnorm(100,0,1)
+b <- rnorm(100,0,1)
+model <- lm(a,b)
+?lm
+model <- lm(a~b)
+model
+summary(model)
+str(model)
+model$model
+summary(model)$$coefficients[,4]
+summary(model)$coefficients[,4]
+summary(model)$coefficients
+summary(model)$coefficients[2,4]
+p <- NULL#
+for(i in 1:1000){#
+	a <- rnorm(100,0,1)#
+	b <- rnorm(100,0,1)#
+	model <- lm(a~b)#
+	p <- c(p,summary(model)$coefficients[2,4])#
+}
+hist(p)
+sum(p<=0.05)/1000
+0.05*72
+78*12
+78*12*316
+312*78
+(1/3)*34
+(1/3)*40
+(1/3)*100
+library(ggplot2)
+install.packages("ggplot2")
+install.packages("ggthemes")
+install.packages("phytools",dep=TRUE)
+t <- read.csv("~/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/figures_tables/Tables_with_genes_SOM/Capybara_Expanded_Families.xlsx")
+t <- read.table("~/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/figures_tables/Tables_with_genes_SOM/Capybara_Expanded_Families.xlsx")
+t <- read.csv2("~/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/figures_tables/Tables_with_genes_SOM/Capybara_Expanded_Families.xlsx")
+t <- read.csv("~/Desktop/PROYECTOS/Capybara_gigantism_Project/Capybara_genome/PAPER_gigantism/figures_tables/Tables_with_genes_SOM/Capybara_Expanded_Families.xlsx")
+setwd("~/GitKraken/Capybara_gigantism_original/Gene_families_expansions")
+t <- read.csv("~/GitKraken/Capybara_gigantism_original/Gene_families_expansions/Capybara_expanded_contracted_gene_families.csv")
+t <- read.csv("~/GitKraken/Capybara_gigantism_original/Gene_families_expansions/Capybara_expanded_contracted_gene_families.csv",sep=";")
+t <- read.csv("~/GitKraken/Capybara_gigantism_original/Gene_families_expansions/Capybara_expanded_contracted_gene_families.csv",sep=";",header=TRUE)
+head(t)
+status <- c(rep("Expanded",2),"Contracted",rep("Expanded",nrow(t)-3))
+nrow(t)
+nrow(t)
+length(status)
+t$status <- status
+t
+getwd()
+write.csv(t,"Capybara_expanded_contracted_gene_families_b.csv")

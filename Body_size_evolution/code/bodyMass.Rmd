@@ -1,0 +1,208 @@
+---
+title: "Mode of body mass evolution in Caviomorph rodents"
+author: "Santiago Herrera-Alvarez"
+date: "September 9, 2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    highlight: kate
+geometry: margin=2cm
+fontsize: 10pt
+---
+
+```{r knitr, echo=FALSE}
+knitr::opts_chunk$set(
+  comment   = "#",
+  results   = "hold",
+  # collapse  = TRUE,
+  fig.align = "center",
+  cache=TRUE,
+  message = FALSE,
+  warning = FALSE,
+  tidy= TRUE,
+  tidy.opts=list(width.cutoff=80))
+```
+
+```{r}
+library(phytools)
+library(geiger)
+library(dplyr)
+
+#To install auteur use the gzip file provided: 
+#install.packages("../auteur_0.11.0612.tar.gz",repos=NULL)
+library(auteur)
+```
+
+## Caviomorpha tree, body mass and StableTraits output
+
+From the literature we obtained a recent time-calibrated phylogeny of Caviomorpha (Upham and Patterson, 2012) and for each species obtained mean adult body mass (in grams) as the mean of the two sexes (Tacutu et al., 2013; Freudenthal and Mart??n-Su??rez, 2013).
+
+
+```{r}
+dat <- read.csv("../hystricognathi_body_mass.csv")
+tr.hys <- read.tree("../hystricognathi.tre")
+
+#Calibrate the tree with the age of Caviomorpha (Upham & Petterson.,2012)
+calib <- makeChronosCalib(tr.hys,node=80,age.min=36.1,age.max=45.6)
+
+#Transform branch lengths to make the tree ultrametric
+hys.ultrametric <- chronos(tr.hys,calibration=calib)
+
+#Plot body mass in front of wach species
+mass <- setNames(dat[,3],dat$X)
+tr.masas.hys <- drop.tip(hys.ultrametric,name.check(hys.ultrametric,mass)$tree_not_data)
+obj <- contMap(tr.masas.hys,mass,res=100,plot=FALSE)
+obj<-setMap(obj,invert=TRUE)
+
+#Set colors (see Phytools blog)
+ii<-sapply(1:Ntip(obj$tree), function(x,tree) which(tree$edge[,2]==x),
+    tree=obj$tree)
+cols<-setNames(obj$cols[sapply(ii,function(x,maps) 
+    names(maps[[x]])[length(maps[[x]])],
+    maps=obj$tree$maps)],obj$tree$tip.label)
+
+plotTree.wBars(obj$tree,exp(mass),method="plotTree",
+               tip.labels=TRUE,fsize=0.4,col=cols,type="phylogram",scale=0.004,
+               mar=c(3.5,0.2,0.2,0.2),x.lim=200)
+axis(1,at=c(165,205,245,285,325,365),labels=c(0,10000,20000,30000,40000,50000),font=0.3)  
+mtext("Body mass (gr)",at=300,side=1,line=2,font=0.9) 
+axisPhylo()
+mtext("MYA",at=50,side=1,line=2,font=0.9)
+```
+
+
+The range of body mass amongst caviomorphs covers from 55 g, in the naked mole rat (*Heterocephalus glaber*), to 55,000 g in the capybara. The capybara is ~23x bigger than the average caviomorph rodents (mean = 2363.507 g). Given this huge difference, there is possible that body size within caviomorphs is not evolving at a single constant rate, but probably at different rates. To test this idea, we used the software STABLETRAITS (Elliot and Mooers, 2014), to compare the BM model with a multiple rate model of body size evolution on the caviomorph phylogeny, and reconstruct ancestral states. 
+
+We found that the rate of body mass evolution among caviomorph rodents has not been constant throughout the their phylogenetic history, as shown by the better fit of a multi-rate model compared to the single-rate-Brownian Motion model (??DIC = 78.6; Table S1) with an estimated value of $\alpha$ = 1.35 (95% confidence interval [CI]: 1.0 to 1.7). The ancestral body size of the most recent common ancestor (MRCA) of Caviomorpha was estimated to be 971 g (95% CI, 221 g to 5,135 g) and the size of the MRCA of the capybara and rock cavy (Kerodon rupestris) was estimated to be 1132 g (95% CI, 437 g to 23,225 g), suggesting that the rate of body size evolution has undergone one or more sudden changes.
+
+**NOTE: the the folder `StableTraits` contains the input file (`hyst_body_mass_stableTraits.txt`) used for the StableTraits sofware, as well as the output. The output tree with brach lengths proportional to rates of body mass evolution is called `hystricognathi_rates_stableTraits.tre`. The folders `alpha2`and `alphaAlterno`, contain the results for each model comparison: $\alpha$ = 2 (BM) and $\alpha$ < 2 (Multiple-rate model), respectively, each with the inferred ancestral states (`.ancstates` files). Body mass values are log-transformed.**
+
+### StableTraits tree output: Branch length proportional to rate of body size evolution
+```{r}
+st.tree <- read.nexus("../StableTraits/hystricognathi_rates_stableTraits.tre")
+st.tree <- paintBranches(st.tree,61,"2")
+plotSimmap(st.tree,fsize=0.5)
+```
+
+
+Capybara displays the higher rate of body mass evolution, as revealed by the length of the branch. Moreover, note the difference in brach length with *Kerodon rupestris*, the closest relative.
+
+
+## Multiple rates of body mass evolution
+To determine whether the capybara could be considered a giant based on a lineage-specific accelerative rate of body mass evolution, we used phylogenetic comparative methods. 
+
+AUTEUR (Eastman et al., 2011) was used to identify which branches on the phylogeny experienced rate shifts. AUTEUR uses a reversible-jump MCMC (rjMCMC) to assess the fit of models that differ in the number of rate shifts in the tree. The algorithm assumes that evolutionary rates are inherited from successive ancestral nodes, unless the data provides evidence of a rate shift. The rjMCMC approach explores models ranging from a single-rate BM process to a maximally complex process where each branch evolves under a different rate.
+
+**NOTE: results are available in the folder `auteur` *BM.hdqhykpwb.X.parameters*: results of each reversible-jump Markov chain**
+```{r}
+p <- data.frame(dat[,"ln_body_mass"])
+rownames(p) <- dat[,1]
+rate_shift_hys <- drop.tip(hys.ultrametric,name.check(hys.ultrametric,p)$tree_not_data)
+```
+
+```{r, eval =FALSE}
+## run two reversible-jump Markov chains
+r=paste(sample(letters,9,replace=TRUE),collapse="")
+lapply(1:2, function(x) rjmcmc.bm(phy=rate_shift_hys, dat=mass, ngen=1000000, sample.freq=100, prob.mergesplit=0.1, simplestart=TRUE, prop.width=1, fileBase=paste(r,x,sep=".")))
+
+# collect directories (r <- "hdqhykpwb")
+dirs=dir("./",pattern=paste("BM",r,sep="."))
+pool.rjmcmcsamples(base.dirs=dirs, lab=r)
+```
+
+
+To plot the tree depicting the rate shifts along the tree, load the `.rda` file containing the combined information for both reversible-jump Markov chains. Note that the rate shift leading to the clade (Dolichotis(Kerodon, Hydrochoerus)) has the highest posterior support for a rate acceleration.
+
+```{r, message = TRUE}
+## view contents of .rda (NOTE, to load use r <- "hdqhykpwb")
+load("../auteur/hdqhykpwb.combined.rjmcmc/hdqhykpwb.posteriorsamples.rda")
+
+## plot Markov sampled rates
+plot.new()
+shifts.plot(phy=rate_shift_hys, base.dir="../auteur/hdqhykpwb.combined.rjmcmc/", burnin=0.5, legend=TRUE, edge.width=2,level=0.1,direction="upwards",y.lim=c(0,140)) 
+```
+
+
+We can take a look at the distribution of mean rates sampled across the tree:
+
+```{r}
+# plot density of sampled mean rates across tree
+rates=read.table(file="../auteur/hdqhykpwb.combined.rjmcmc/hdqhykpwb.rjmcmc.log",header=TRUE)$mean
+plot.new()
+trace.plot(rates,col="maroon",alpha=0.4,xlab="rates",log="x",legend.control=list(plot=FALSE))
+```
+
+
+We can also compare the distributions of sampled rates in the clade (Dolichotis(Kerodon, Hydrochoerus)), hereafter Capybara clade, versus the superfamily Cavioidea, hereafter background.
+
+
+```{r}
+#Compare the posterior sampled rates of the capybara clade vs. the background (cavioidea)
+rates <- data.frame(posteriorsamples$rates)
+
+column_to_vector <- function(x){
+  v <- c()
+  for(i in 1:ncol(x)){
+    v <- c(v,x[,i])
+  }
+  return(v)
+}
+
+#Select posterior rates of the Capybara clade
+CapybaraClade <- c("Dolichotis_patagonum","Kerodon_rupestris","Hydrochoerus_hydrochaeris")
+branchlist <- which.edge(rate_shift_hys,CapybaraClade)
+branchlist <- paste("X",branchlist,sep="")
+CapybaraCladeRates <- rates %>% select(contains(branchlist[1]),contains(branchlist[2]),contains(branchlist[3]),contains(branchlist[4]))
+CapybaraCladeRates <- column_to_vector(CapybaraCladeRates)
+
+#Select posterior rates of the Background clade (Cavioidea)
+cladoCavioidea <- c("Myoprocta_acouchy","Dasyprocta_leporina","Hydrochoerus_hydrochaeris","Kerodon_rupestris","Dolichotis_patagonum","Microcavia_australis","Cavia_tschudii","Cavia_porcellus","Cavia_aperea","Galea_musteloides","Cuniculus_paca","Cuniculus_taczanowskii")
+branchlist2 <- which.edge(rate_shift_hys,cladoCavioidea)
+branchlist2 <- paste("X",branchlist2,sep="")
+branchlist2 <- branchlist2[1:18] #list of branches excluding the branches of the capybara clade
+BackgroundCavioideaRates <- rates %>% select(contains(branchlist2[1]),contains(branchlist2[2]),contains(branchlist2[3]),contains(branchlist2[4]),contains(branchlist2[5]),contains(branchlist2[6]),contains(branchlist2[7]),contains(branchlist2[8]),contains(branchlist2[9]),contains(branchlist2[10]),contains(branchlist2[11]),contains(branchlist2[12]),contains(branchlist2[13]),contains(branchlist2[14]),contains(branchlist2[15]),contains(branchlist2[16]),contains(branchlist2[17]),contains(branchlist2[18]))
+BackgroundCavioideaRates <- column_to_vector(BackgroundCavioideaRates)
+
+#Fill with NAs the CapybaraCladeRates to match Brackground length
+max.len = max(length(CapybaraCladeRates), length(BackgroundCavioideaRates))
+CapybaraCladeRates = c(CapybaraCladeRates, rep(NA, max.len - length(CapybaraCladeRates)))
+
+post.rates <- data.frame(CapybaraCladeRates,BackgroundCavioideaRates)
+trace.plot(obj=post.rates,col=c("darkred","gray"),alpha=0.6,log="x",xlab="rates")
+```
+
+Finally, we performed a permutation test to ensure that both distributions were significantly different, and hence, prove that there is an acceleration in the rate of body mass evolution in the Capybara clade (Note that the red line, i.e. the observed mean difference in the rate of both clades falls way out of the null distribution)
+
+```{r}
+CapybaraCladeRates <- CapybaraCladeRates[!is.na(CapybaraCladeRates)]
+n = 10000
+ratesT = c(CapybaraCladeRates, BackgroundCavioideaRates)
+null_dist = c()
+for (i in 1:n) {
+    remuestreo_cap = sample(ratesT, length(CapybaraCladeRates), replace = T)
+    meanC = mean(remuestreo_cap)
+    remuestreo_bg = sample(ratesT, length(BackgroundCavioideaRates), replace = T)
+    meanBg = mean(remuestreo_bg)
+    diff = meanC - meanBg
+    null_dist = c(null_dist, diff)
+}
+
+diff_real <- mean(CapybaraCladeRates) - mean(BackgroundCavioideaRates)
+
+pval <- sum(null_dist >= diff_real)/n
+print(paste("P-value: ", pval))
+
+# Red line represents the observed value
+hist(null_dist, xlim = c(-0.08, 0.08), xlab = "Rate capybara clade - Rate Cavioidea (background)", main = "Null distribution of differences in \n Rate of body mass evolution")
+abline(v = diff_real, col = "red", lwd = 2)
+```
+
+
+
+
+
+
+
+
+

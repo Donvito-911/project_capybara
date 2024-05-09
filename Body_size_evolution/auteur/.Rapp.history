@@ -1,0 +1,269 @@
+add.simmap.legend(colors=cols,prompt=TRUE)
+ancestros<-ace(modo,hongos,model="ARD",type="discrete")
+plotTree(hongos,type="fan",fsize=0.6,ftype="i",lwd=1)
+nodelabels(node=1:hongos$Nnode+Ntip(hongos),pie=ancestros$lik.anc,piecol=cols,cex=0.4)
+tiplabels(pie=to.matrix(modo[hongos$tip.label],levels(modo)),piecol=cols,cex=0.3)
+setwd("~/Desktop/BIOMICS/TESIS_MAESTRIA/Rate-shifts on phylogenies/Rodents/Upham-Patterson_2012_Hystricognathi/auteur")
+dirs=dir("./",pattern=paste("BM",r,sep="."))
+r=paste(sample(letters,9,replace=TRUE),collapse="")
+dirs=dir("./",pattern=paste("BM",r,sep="."))
+dirs
+pool.rjmcmcsamples(base.dirs=dirs, lab=r)
+library(auteur)
+dirs=dir("./",pattern=paste("BM",r,sep="."))
+pool.rjmcmcsamples(base.dirs=dirs, lab=r)
+dirs
+tr <- read.tree("~/Desktop/BIOMICS/TESIS_MAESTRIA/Rate-shifts on phylogenies/Rodents/Upham-Patterson_2012_Hystricognathi/auteur/BM.hdqhykpwb.1.parameters/hdqhykpwb.1.tre")
+tr
+plot(tr)
+dirs=dir("./",pattern=paste("BM",r,sep="."))
+?pool.rjmcmcsamples
+dirs=sapply(1:2, function(x) dir("./",pattern=paste("BM",r,x,sep="."))
+)
+dirs
+pool.rjmcmcsamples(base.dirs=dirs, lab=r)
+dirs=dir("./",pattern=paste("BM",r,sep="."))
+pool.rjmcmcsamples(base.dirs=dirs, lab=r)
+dirs=dir("./",pattern=paste("BM",r,x,sep="."))
+r
+class(r)
+r <- hdqhykpwb
+r <- "hdqhykpwb"
+r
+class(r)
+r
+dirs=dir("./",pattern=paste("BM",r,sep="."))
+pool.rjmcmcsamples(base.dirs=dirs, lab=r)
+rates=read.table(file=paste(dir(pattern=paste(r,"combined.rjmcmc",sep=".")),paste(r,"rjmcmc.log",sep="."),sep="/"),header=TRUE)$mean
+trace.plot(rates,col="maroon",alpha=0.4,xlab="rates",log="x",legend.control=list(plot=FALSE))
+?trace.plot
+rates
+head(rates)
+load(paste(paste(r,"combined.rjmcmc",sep="."),paste(r,"posteriorsamples.rda",sep="."),sep="/"))
+print(head(posteriorsamples$rates))
+print(head(posteriorsamples$rate.shifts))
+plot.new()
+shifts.plot(phy=rate_shift_hys, base.dir=paste(r,"combined.rjmcmc",sep="."), burnin=0.5, legend=TRUE, edge.width=2,level=0.1,direction="upwards")
+dat3 <- read.csv("~/Desktop/BIOMICS/TESIS_MAESTRIA/Rate-shifts on phylogenies/Rodents/Upham-Patterson_2012_Hystricognathi/Bayesian_Sampling_Of_Shifts_In_Trait_Evolution/hystricognathi_body_mass.csv")
+tr.hys <- read.tree("~/Desktop/BIOMICS/TESIS_MAESTRIA/Rate-shifts on phylogenies/Rodents/Upham-Patterson_2012_Hystricognathi/hystricognathi.tre")
+calib <- makeChronosCalib(tr.hys,node=78,age.min=36.1,age.max=45.6) #Transformar arbol para que sea ultrametrico. Se transforma la profundidad del arbol a 1, edades de nodos relativas a 1.
+hys.ultrametric <- chronos(tr.hys,calibration=calib)
+p <- data.frame(dat3[,"ln_body_mass"])
+rownames(p) <- dat3[,1]
+rate_shift_hys <- drop.tip(hys.ultrametric,name.check(hys.ultrametric,p)$tree_not_data)
+aData<-dat3[,-1]#
+rownames(aData)<-dat3[,1]#
+aData#
+mass<-aData[,2]#
+names(mass)<-rownames(aData)
+plot.new()
+shifts.plot(phy=rate_shift_hys, base.dir=paste(r,"combined.rjmcmc",sep="."), burnin=0.5, legend=TRUE, edge.width=2,level=0.1,direction="upwards")
+shifts.plot(phy=rate_shift_hys, base.dir=paste(r,"combined.rjmcmc",sep="."), burnin=0.5, legend=TRUE, edge.width=2,level=0.6,direction="upwards")
+plot.new()
+shifts.plot(phy=rate_shift_hys, base.dir=paste(r,"combined.rjmcmc",sep="."), burnin=0.5, legend=TRUE, edge.width=2,level=0.6,direction="upwards")
+plot.new()
+shifts.plot(phy=rate_shift_hys, base.dir=paste(r,"combined.rjmcmc",sep="."), burnin=0.5, legend=TRUE, edge.width=2,level=0,direction="upwards")
+trace.plot(rates,col="maroon",alpha=0.4,xlab="rates",log="x",legend.control=list(plot=TRUE))
+trace.plot(rates,col="maroon",alpha=0.4,xlab="rates",log="x",legend.control=list(plot=FALSE))
+d=data.frame(list(rnorm(n=1000,mean=9,sd=5)),list(rnorm(n=1000,mean=1.5,sd=2)),list(rnorm(n=1000,mean=-0.5,sd=1.5)))
+d
+names(d)=letters[1:3]
+d
+trace.plot(obj=d, xlim=list(max=10), col=c("maroon","gray","purple"), alpha=0.3, lwd=2)
+trace.plot(obj=d, xlim=list(max=10), col=c("maroon","gray","purple"), alpha=0.3, lwd=2)
+trace.plot(obj=d, col=c("maroon","gray","purple"), alpha=0.3, lwd=2)
+dirs
+print(head(posteriorsamples$rates))
+posteriorsamples
+plotTree(rate_shift_hys)
+library(phytools)
+plotTree(rate_shift_hys)
+tiplabels()
+plotTree(rate_shift_hys)
+plotTree(rate_shift_hys,fsize=0.6)
+tiplabels()
+getDescendants(rate_shift_hys,node=130)
+rate_shift_hys$edge
+cladoCapibara <- c("Dolichotis_patagonum","Kerodon_rupestris","Hydrochoerus_hydrochaeris")
+branchlist <- which.edge(rate_shift_hys,cladoCapibara)
+branchlist
+Abranches<-rate_shift_hys$edge[branchlist, ]
+Abranches
+plotTree(rate_shift_hys)
+plotTree(rate_shift_hys,fsize=0.6)
+branchlist <- c(branchlist,130)
+branchlist
+rates <- posteriorsamples$rates$119
+rates <- posteriorsamples$rates
+head(rates)
+class(rates)
+rates <- data.frame(posteriorsamples$rates,h=TRUE)
+class(rates)
+head(rates)
+rates <- data.frame(posteriorsamples$rates)
+head(rates)
+r130 <- rates$X130
+head(r130)
+plot.new()#
+shifts.plot(phy=rate_shift_hys, base.dir=paste(r,"combined.rjmcmc",sep="."), burnin=0.5, legend=TRUE, edge.width=2,level=0.1,direction="upwards")
+branchlist
+rates_cladoCapibara <- c(rates$X130,rates$X119,rates$X120,rates$X121,rates$X122)
+length(rates_cladoCapibara)
+length(r130)
+cladoCavioidea <- c("Myoprocta_acouchy","Dasyprocta_leporina","Hydrochoerus_hydrochaeris","Kerodon_rupestris","Dolichotis_patagonum","Microcavia_australis","Cavia_tschudii","Cavia_porcellus","Cavia_aperea","Galea_musteloides","Cuniculus_paca","Cuniculus_taczanowskii")
+branchlist2 <- which.edge(rate_shift_hys,cladoCavioidea)
+branchlist2
+branchlist
+branchlist2 <- c(101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118) #Ramas sin incluir las del cladoCapibara
+?trace.pllot
+?trace.plot
+rates_cladoCavioidea <- c(rates$X101,rates$X102,rates$X103,rates$X104,rates$X105,rates$X106,rates$X107,rates$X108,rates$X109,rates$X110,rates$X111,rates$X112,rates$X113,rates$X114,rates$X115,rates$X116,rates$X117,rates$X118)
+length(rates_cladoCavioidea)
+?sample
+rates_cladoCavioidea2 <- sample(rates_cladoCavioidea,100000)
+length(rates_cladoCavioidea2)
+?trace.plot
+post.rates <- data.frame(rates_cladoCapibara,rates_cladoCavioidea2)
+post.rates
+head(post.rates)
+trace.plot(obj=post.rates,col=c("maroon","purple"),alpha=0.3,log="x")
+trace.plot(obj=post.rates,col=c("maroon","gray"),alpha=0.3,log="x")
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.3,log="x")
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.5,log="x")
+rate_shift_hys$tip.label
+cladoBackground <- c("Ctenomys_steinbachi","Octodon_bridgesi","Aconaemys_fuscus","Spalacopus_cyanus","Octodontomys_gliroides","Trinomys_setosus","Trinomys_iheringi","Kannabateomys_amblyonyx","Echimys_chrysurus","Makalata_didelphoides","Lonchothrix_emiliae","Proechimys_longicaudatus","Proechimys_quadruplicatus","Capromys_pilorides","Lagostomus_maximus","Dinomys_branickii","Erethizon_dorsatum","Dasyprocta_leporina","Cavia_tschudii","Microcavia_australis","Hydrochoerus_hydrochaeris","Heterocephalus_glaber","Bathyergus_suillus","Ctenomys_boliviensis","Octodon_lunatus","Aconaemys_sagei","Tympanoctomys_barrerae","Euryzygomatomys_spinosus","Trinomys_eliasi","Dactylomys_dactylinus","Toromys_grandis","Makalata_macrura","Isothrix_sinnamariensis","Mesomys_hispidus","Proechimys_roberti","Hoplomys_gymnurus","Abrocoma_cinerea","Chinchilla_lanigera","Coendou_bicolor","Cuniculus_taczanowskii","Myoprocta_acouchy","Cavia_porcellus","Dolichotis_patagonum","Petromus_typicus","Heliophobius_argenteocinereus","Georychus_capensis","Ctenomys_haigi","Octodon_degus","Aconaemys_porteri","Octomys_mimax","Clyomys_laticeps","Trinomys_dimidiatus","Dactylomys_boliviensis","Phyllomys_blainvilii","Phyllomys_brasiliensis","Isothrix_bistriata","Thrichomys_apereoides","Proechimys_simonsi","Myocastor_coypus","Abrocoma_bennettii","Lagidium_viscacia","Sphiggurus_melanura","Cuniculus_paca","Galea_musteloides","Cavia_aperea","Kerodon_rupestris","Thryonomys_swinderianus","Cryptomys_hottentotus","Hystrix_brachyurus")
+branchlist2 <- which.edge(rate_shift_hys,cladoBackground)
+branchlist2
+post.rates <- data.frame(rates_cladoCapibara,rates_cladoCavioidea)
+trace.plot(obj=c(rates_cladoCapibara,rates_cladoCavioidea),col=c("maroon","darkgray"),alpha=0.5,log="x",xlab="rates")
+360000-100000
+?seq
+?rep
+nas <- rep("NA",260000)
+head(nas)
+rates_cladoCapibara <- c(rates_cladoCapibara,nas)
+post.rates <- data.frame(rates_cladoCapibara,rates_cladoCavioidea)
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.5,log="x",xlab="rates")
+post.rates
+tail(post.rates)
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.5,log="x",xlab="rates")
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.5,log="x",xlab="rates",na.rm=TRUE)
+rates_cladoCapibara <- c(rates_cladoCapibara,rates_cladoCapibara,rates_cladoCapibara,sample(rates_cladoCapibara,60))
+post.rates <- data.frame(rates_cladoCapibara,rates_cladoCavioidea)
+rates_cladoCapibara <- c(rates$X130,rates$X119,rates$X120,rates$X121,rates$X122)
+length(rates_cladoCapibara)
+rates_cladoCapibara2 <- c(rates_cladoCapibara,rates_cladoCapibara,rates_cladoCapibara)
+length(rates_cladoCapibara2)
+c <- sample(rates_cladoCapibara,60000)
+rates_cladoCapibara2 <- c(rates_cladoCapibara2,c)
+post.rates <- data.frame(rates_cladoCapibara,rates_cladoCavioidea)
+post.rates <- data.frame(rates_cladoCapibara2,rates_cladoCavioidea)
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.5,log="x",xlab="rates")
+Capibara <- c(rates$X130,rates$X119,rates$X120,rates$X121,rates$X122)
+Background_Cavioidea <- c(rates$X101,rates$X102,rates$X103,rates$X104,rates$X105,rates$X106,rates$X107,rates$X108,rates$X109,rates$X110,rates$X111,rates$X112,rates$X113,rates$X114,rates$X115,rates$X116,rates$X117,rates$X118)
+Capibara2 <- c(Capibara,Capibara,Capibara)#
+c <- sample(Capibara,60000)#
+Capibara2 <- c(Capibara2,c)#
+post.rates <- data.frame(Capibara2,Background_Cavioidea)#
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.5,log="x",xlab="rates")
+branchlist2 <- which.edge(rate_shift_hys,cladoBackground)
+branchlist2
+branchlist
+Background <- c(rates$X1,rates$X2,rates$X3,rates$X4,rates$X5,rates$X6,rates$X7,rates$X8,rates$X9,rates$X10,rates$X11,rates$X12,rates$X13,rates$X14,rates$X15,rates$X16,rates$X17,rates$X18,rates$X19,rates$X20,rates$X21,rates$X22,rates$X23,rates$X24,rates$X25,rates$X26,rates$X27,rates$X28,rates$X29,rates$X30,rates$X31,rates$X32,rates$X33,rates$X34,rates$X35,rates$X36,rates$X37,rates$X38,rates$X39,rates$X40,rates$X41,rates$X42,rates$X43,rates$X44,rates$X45,rates$X46,rates$X47,rates$X48,rates$X49,rates$X50,rates$X51,rates$X52,rates$X53,rates$X54,rates$X55,rates$X56,rates$X57,rates$X58,rates$X59,rates$X60,rates$X61,rates$X62,rates$X63,rates$X64,rates$X65,rates$X66,rates$X67,rates$X68,rates$X69,rates$X70,rates$X71,rates$X72,rates$X73,rates$X74,rates$X75,rates$X76,rates$X77,rates$X78,rates$X79,rates$X80,rates$X81,rates$X82,rates$X83,rates$X84,rates$X85,rates$X86,rates$X87,rates$X88,rates$X89,rates$X90,rates$X91,rates$X92,rates$X93,rates$X94,rates$X95,rates$X96,rates$X97,rates$X98,rates$X99,rates$X100,rates$X101,rates$X102,rates$X103,rates$X104,rates$X105,rates$X106,rates$X107,rates$X108,rates$X109,rates$X110,rates$X111,rates$X112,rates$X113,rates$X114,rates$X115,rates$X116,rates$X117,rates$X118,rates$X123,rates$X124,rates$X125,rates$X126,rates$X127,rates$X128,rates$X129,rates$X131,rates$X132,rates$X133,rates$X134,rates$X135,rates$X136)
+Background2 <- sample(Background,100000) #Para que tenga el mismo numero de valores de rates_cladoCapibara
+post.rates <- data.frame(Capibara,Background2)
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.5,log="x",xlab="rates")
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.5,xlab="rates")
+trace.plot(obj=post.rates,col=c("maroon","darkgray"),alpha=0.7,log="x",xlab="rates")
+plot.new()#
+shifts.plot(phy=rate_shift_hys, base.dir=paste(r,"combined.rjmcmc",sep="."), burnin=0.5, legend=TRUE, edge.width=2,level=0.1,direction="upwards")
+cladoCapibara <- c("Dolichotis_patagonum","Kerodon_rupestris","Hydrochoerus_hydrochaeris")#
+branchlist <- which.edge(rate_shift_hys,cladoCapibara)#
+branchlist <- c(branchlist,130) #Para incluir la rama de donde se origina el clado#
+rates <- data.frame(posteriorsamples$rates)#
+Capibara <- c(rates$X130,rates$X119,rates$X120,rates$X121,rates$X122)
+cladoCavioidea <- c("Myoprocta_acouchy","Dasyprocta_leporina","Hydrochoerus_hydrochaeris","Kerodon_rupestris","Dolichotis_patagonum","Microcavia_australis","Cavia_tschudii","Cavia_porcellus","Cavia_aperea","Galea_musteloides","Cuniculus_paca","Cuniculus_taczanowskii")#
+branchlist2 <- which.edge(rate_shift_hys,cladoCavioidea)#
+branchlist2 <- c(101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118) #Ramas sin incluir las del cladoCapibara#
+Background_Cavioidea <- c(rates$X101,rates$X102,rates$X103,rates$X104,rates$X105,rates$X106,rates$X107,rates$X108,rates$X109,rates$X110,rates$X111,rates$X112,rates$X113,rates$X114,rates$X115,rates$X116,rates$X117,rates$X118)
+Capibara2 <- c(Capibara,Capibara,Capibara)#
+c <- sample(Capibara,60000)
+Capibara2 <- c(Capibara2,c)
+post.rates <- data.frame(Capibara2,Background_Cavioidea)
+trace.plot(obj=post.rates,col=c("maroon","gray"),alpha=0.6,log="x",xlab="rates")
+trace.plot(obj=post.rates,col=c("red","gray"),alpha=0.6,log="x",xlab="rates")
+trace.plot(obj=post.rates,col=c("darkred","gray"),alpha=0.6,log="x",xlab="rates")
+rate_shift_hys$edge.length
+rate_shift_hys$edge
+rate_shift_hys$edges
+str(rate_shift_hys)
+branchlist
+lengths <- rate_shift_hys$edge.length[119:122]
+lengths
+l130 <- rate_shift_hys$edge.length[130]
+lengths <- c(lengths,l130)
+lengthsB <- rate_shift_hys$edge.length[101:118]
+rates_Capibara <- Capibara/lengths
+Background_Cavioidea <- c(rates$X101,rates$X102,rates$X103,rates$X104,rates$X105,rates$X106,rates$X107,rates$X108,rates$X109,rates$X110,rates$X111,rates$X112,rates$X113,rates$X114,rates$X115,rates$X116,rates$X117,rates$X118)
+rates_Background <- Background_Cavioidea/lengthsB
+Background2 <- sample(rates_Background,100000) #Para que tenga el mismo numero de valores de rates_cladoCapibara
+post.rates <- data.frame(rates_Capibara,Background2)
+trace.plot(obj=post.rates,col=c("darkred","gray"),alpha=0.6,log="x",xlab="rates")
+Capibara <- c(rates$X119,rates$X120,rates$X121,rates$X122)
+lengths <- rate_shift_hys$edge.length[119:122]
+rates_Capibara <- Capibara/lengths
+post.rates <- data.frame(rates_Capibara,Background2)
+Background2 <- sample(rates_Background,80000) #Para que tenga el mismo numero de valores de rates_cladoCapibara
+post.rates <- data.frame(rates_Capibara,Background2)
+trace.plot(obj=post.rates,col=c("darkred","gray"),alpha=0.6,log="x",xlab="rates")
+Capibara <- c(rates$X119,rates$X120,rates$X121,rates$X122)
+Background_Cavioidea <- c(rates$X101,rates$X102,rates$X103,rates$X104,rates$X105,rates$X106,rates$X107,rates$X108,rates$X109,rates$X110,rates$X111,rates$X112,rates$X113,rates$X114,rates$X115,rates$X116,rates$X117,rates$X118)
+Background2 <- sample(Background_Cavioidea,80000) #Para que tenga el mismo numero de valores de rates_cladoCapibara
+post.rates <- data.frame(rates_Capibara,Background2)
+trace.plot(obj=post.rates,col=c("darkred","gray"),alpha=0.6,log="x",xlab="rates")
+branchlist <- c(branchlist,130) #Para incluir la rama de donde se origina el clado
+Capibara <- c(rates$X119,rates$X120,rates$X121,rates$X122,rates$X130)
+Background2 <- sample(Background_Cavioidea,100000) #Para que tenga el mismo numero de valores de rates_cladoCapibara
+post.rates <- data.frame(rates_Capibara,Background2)
+Capibara <- c(rates$X119,rates$X120,rates$X121,rates$X122)
+Background2 <- sample(Background_Cavioidea,80000) #Para que tenga el mismo numero de valores de rates_cladoCapibara
+post.rates <- data.frame(Capibara,Background2)
+trace.plot(obj=post.rates,col=c("darkred","gray"),alpha=0.6,log="x",xlab="rates")
+Capibara <- c(rates$X119,rates$X120,rates$X121,rates$X122rates$X130)
+Background2 <- sample(Background_Cavioidea,100000) #Para que tenga el mismo numero de valores de rates_cladoCapibara
+post.rates <- data.frame(Capibara,Background2)
+Capibara <- c(rates$X119,rates$X120,rates$X121,rates$X122,rates$X130)
+Background2 <- sample(Background_Cavioidea,100000) #Para que tenga el mismo numero de valores de rates_cladoCapibara
+post.rates <- data.frame(Capibara,Background2)
+trace.plot(obj=post.rates,col=c("darkred","gray"),alpha=0.6,log="x",xlab="rates")
+head(post.rates)
+t.test(post.rates$Capibara, post.rates$Background2,alternative = "greater")
+t.test(log(post.rates$Capibara), log(post.rates$Background2),alternative = "greater")
+hist(post.rates$Capibara)
+hist(log(post.rates$Capibara))
+rate_shift_hys$edge.length
+str(rate_shift_hys)
+rate_shift_hys$edge
+n<-length(rate_shift_hys$edge[,1])
+n
+> ee<-setNames(tree$edge.length[sapply(1:n,function(x,y) which(y==x),y=tree$edge[,2])],tree$tip.label)
+ee<-setNames(tree$edge.length[sapply(1:n,function(x,y) which(y==x),y=tree$edge[,2])],tree$tip.label)
+ee<-setNames(rate_shift_hys$edge.length[sapply(1:n,function(x,y) which(y==x),y=rate_shift_hys$edge[,2])],rate_shift_hys$tip.label)
+plotTree(rate_shift_hys)
+> edgelabels(rate_shift_hys$edge.length)
+edgelabels(rate_shift_hys$edge.length)
+g <- edgelabels(rate_shift_hys$edge.length)
+?edgelabels
+?edgelabels
+plotTree(rate_shift_hys)
+edgelabels(rate_shift_hys$edge.length,edge=c(119,120,121,122,130))
+plotTree(rate_shift_hys)
+plotTree(rate_shift_hys,fsize=0.6)
+edgelabels(rate_shift_hys$edge.length,edge=c(119,120,121,122))
+plotTree(rate_shift_hys,fsize=0.6)
+edgelabels(round(rate_shift_hys$edge.length,3)edge=c(119,120,121,122)cex=0.5)
+edgelabels(round(rate_shift_hys$edge.length,3),cex=0.5)
+plotTree(rate_shift_hys,fsize=0.6)
+edgelabels(round(rate_shift_hys$edge.length,3),cex=0.5,edge=c(119,120,121,122))
+plotTree(rate_shift_hys,fsize=0.6)#
+edgelabels(round(rate_shift_hys$edge.length,3),cex=0.5)

@@ -1,0 +1,812 @@
+---
+title: "Genome-wide analysis of mutation load in Capybara genome"
+author: "Santiago Herrera-Alvarez"
+date: "September 9, 2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    highlight: kate
+geometry: margin=2cm
+fontsize: 10pt
+---
+
+```{r knitr, echo=FALSE}
+knitr::opts_chunk$set(
+  comment   = "#",
+  results   = "hold",
+  # collapse  = TRUE,
+  fig.align = "center",
+  cache=FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy= TRUE,
+  tidy.opts=list(width.cutoff=80))
+```
+
+```{r,message=FALSE,warning=FALSE}
+library(ggplot2)
+library(Rmisc)
+library(cowplot)
+library(phytools)
+library(geiger)
+library(biomaRt)
+library(dplyr)
+library(ggpubr)
+library(ggrepel)
+library(reshape)
+```
+
+### Analysis of $d_N/d_S$ ($\omega$) values accross rodent genomes
+
+```{r, echo=FALSE}
+#Open files with rate values
+w <- read.table("../omega_values.txt",h=TRUE)
+ds <- read.table("../dS_values.txt",h=TRUE)
+dn <- read.table("../dN_values.txt",h=TRUE)
+
+#Extract each set of omegas per species, and remove outliers
+#(*for dS and dN, see below):
+capybara <- w$Capybara
+squirrel <- w$Squirrel
+guineaPig <- w$GuineaPig
+chinchilla <- w$Chinchilla
+degu <- w$Degu
+NMrat <- w$NMRat
+mouse <- w$Mouse
+rat <- w$Rat
+vole <- w$Vole
+deermouse <- w$DeerMouse
+hamster <- w$Hamster
+BMrat <- w$BMRat
+jerboa <- w$Jerboa
+kangrat <- w$KangRat
+marmota <- w$Marmota
+castor <- w$Castor
+
+wR <- c(squirrel,guineaPig,chinchilla,degu,NMrat,mouse,rat,vole,deermouse,hamster,BMrat,jerboa,kangrat,marmota,castor)
+wR = wR[wR>=-0.5 & wR<=2]
+
+wC <- capybara
+wC = wC[wC>=-0.5 & wC<=2]
+
+w <- c(wC,wR)
+spp <- rep(c("Capybara","Other rodents"),c(226,3378))
+
+dat.omega <- data.frame(w,spp)
+dat.omega$ln.w <- log(w)
+
+median.wC <- median(wC)
+median.wR <- median(wR)
+medians <- c(median.wC,median.wR)
+tax <- c("Capybara","Other rodents")
+m <- data.frame(tax,medians)
+
+```
+```{r,echo=FALSE}
+#Example with dn values
+capybara_dn <- dn$Capybara
+squirrel_dn <- dn$Squirrel
+guineaPig_dn <- dn$GuineaPig
+chinchilla_dn <- dn$Chinchilla
+degu_dn <- dn$Degu
+NMrat_dn <- dn$NMRat
+mouse_dn <- dn$Mouse
+rat_dn <- dn$Rat
+vole_dn <- dn$Vole
+deermouse_dn <- dn$DeerMouse
+hamster_dn <- dn$Hamster
+BMrat_dn <- dn$BMRat
+jerboa_dn <- dn$Jerboa
+kangrat_dn <- dn$KangRat
+marmota_dn <- dn$Marmota
+castor_dn <- dn$Castor
+
+dnR <- c(squirrel_dn,guineaPig_dn,chinchilla_dn,degu_dn,NMrat_dn,mouse_dn,rat_dn,vole_dn,deermouse_dn,hamster_dn,BMrat_dn,jerboa_dn,kangrat_dn,marmota_dn,castor_dn)
+dnR = dnR[dnR>=-0.5 & dnR<=2]
+
+dnC <- capybara_dn
+dnC = dnC[dnC>=-0.5 & dnC<=2]
+
+dn <- c(dnC,dnR)
+spp <- rep(c("Capybara","Other rodents"),c(length(dnC),length(dnR)))
+
+dat.dn <- data.frame(dn,spp)
+
+#Example with ds values
+capybara_ds <- ds$Capybara
+squirrel_ds <- ds$Squirrel
+guineaPig_ds <- ds$GuineaPig
+chinchilla_ds <- ds$Chinchilla
+degu_ds <- ds$Degu
+NMrat_ds <- ds$NMRat
+mouse_ds <- ds$Mouse
+rat_ds <- ds$Rat
+vole_ds <- ds$Vole
+deermouse_ds <- ds$DeerMouse
+hamster_ds <- ds$Hamster
+BMrat_ds <- ds$BMRat
+jerboa_ds <- ds$Jerboa
+kangrat_ds <- ds$KangRat
+marmota_ds <- ds$Marmota
+castor_ds <- ds$Castor
+
+dsR <- c(squirrel_ds,guineaPig_ds,chinchilla_ds,degu_ds,NMrat_ds,mouse_ds,rat_ds,vole_ds,deermouse_ds,hamster_ds,BMrat_ds,jerboa_ds,kangrat_ds,marmota_ds,castor_ds)
+dsR = dsR[dsR>=-0.5 & dsR<=2]
+
+dsC <- capybara_ds
+dsC = dsC[dsC>=-0.5 & dsC<=2]
+
+ds <- c(dsC,dsR)
+spp <- rep(c("Capybara","Other rodents"),c(length(dsC),length(dsR)))
+
+dat.ds <- data.frame(ds,spp)
+```
+
+### Density plot of the distribution of $\omega$ values for each species:
+
+As can be seen, the capybara clearly has a bimodal distribution on $\omega$ values.
+
+```{r, echo=FALSE,fig.width = 12}
+spp2 <- rep(c("Hhyd","Itri","Cpor","Clan","Odeg","Hgla","Mmus","Rnor",
+             "Mocr","Pman","Maur","Ngal","Jjac","Dord","Mmar","Ccan"),
+           c(length(capybara),length(squirrel),length(guineaPig),length(chinchilla),
+             length(degu),length(NMrat),length(mouse),length(rat),length(vole),
+             length(deermouse),length(hamster),length(BMrat),length(jerboa),length(kangrat),
+             length(marmota),length(castor)))
+
+w_spp <- c(capybara,squirrel,guineaPig,chinchilla,degu,NMrat,mouse,rat,vole,deermouse,hamster,BMrat,jerboa,kangrat,marmota,castor)
+
+dat.omega2 <- data.frame(w_spp,spp2)
+
+ggplot(dat.omega2, aes(x=w_spp)) + geom_density(aes(group=spp2,colour=spp2,fill=spp2),alpha=0.25)+   scale_x_continuous(limits = c(-0.2, 2)) + labs(x="Nuclear dN/dS", y="Density") + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + theme(legend.position = c(0.7, 0.55),legend.background = element_rect(color = "black",fill = "white", size = 1, linetype = "solid"), legend.title = element_text(size=8,face="bold"),legend.text=element_text(size=9)) 
+```
+
+### Density plot of the distribution of $\omega$ values per group
+```{r, echo=FALSE,fig.width = 12}
+a <- ggplot(dat.omega, aes(x=w)) + geom_density(aes(group=spp,colour=spp,fill=spp),alpha=0.7)+ scale_x_continuous(limits = c(-0.2, 2)) + labs(x="Nuclear dN/dS", y="Density")+scale_fill_manual(values=c("deepskyblue", "darkolivegreen1"), name="Taxon")+scale_color_manual(values=c("black", "black"),name="Taxon") + theme(legend.position = c(0.7, 0.7),legend.background = element_rect(color = "black", fill = "white", size = 1, linetype = "solid"),legend.title = element_text(size=10, face="bold"),legend.text=element_text(size=10)) + geom_vline(data=m, aes(xintercept=medians, colour=tax),linetype="dashed")+ theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle(expression(paste(omega, " values")))
+
+b <- ggplot(dat.ds, aes(x=ds)) + geom_density(aes(group=spp,colour=spp,fill=spp),alpha=0.7)+ scale_x_continuous(limits = c(-0.2, 1)) + labs(x="Nuclear dS", y="Density")+scale_fill_manual(values=c("deepskyblue", "darkolivegreen1"), name="Taxon")+scale_color_manual(values=c("black", "black"),name="Taxon") + theme(legend.position = "none") + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle(expression(paste(d[S]," values")))
+
+c <- ggplot(dat.dn, aes(x=dn)) + geom_density(aes(group=spp,colour=spp,fill=spp),alpha=0.7)+ scale_x_continuous(limits = c(-0.01, 0.2)) + labs(x="Nuclear dN", y="Density")+scale_fill_manual(values=c("deepskyblue", "darkolivegreen1"), name="Taxon")+scale_color_manual(values=c("black", "black"),name="Taxon") + theme(legend.position = "none") + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20))  + ggtitle(expression(paste(d[N]," values")))
+
+ggarrange(a,b,c, ncol = 3, nrow = 1)
+```
+
+## Permutation (Monte Carlo) Test
+
+A permutation test on each rate class was performed to confirm which class was driving the elevated genome-wide $d_N/d_S$ on the capybara relative to the rest of rodents: values of both groups were randomized to create a null distribution of the differences of means.
+
+```{r}
+## Permutation test 1: dN/dS
+n=10000
+wT=c(wC,wR)
+null_dist=NULL
+for (i in 1:n) {
+  remuestreo_cap=sample(wT,length(wC),replace=T)
+  medianC=median(remuestreo_cap)
+  remuestreo_rod=sample(wT,length(wR),replace=T)
+  medianR=median(remuestreo_rod)
+  diff=medianC-medianR
+  null_dist=c(null_dist,diff)
+}
+
+diff_real <- median(wC)-median(wR)
+
+pval <- sum(null_dist>=diff_real)/n
+print(paste("P-value for dN/dS difference: ",pval))
+
+## Permutation test 2: dS
+n=10000
+dsT=c(dsC,dsR)
+null_dist_ds=NULL
+for (i in 1:n) {
+  remuestreo_cap=sample(dsT,length(dsC),replace=T)
+  medianC=median(remuestreo_cap)
+  remuestreo_rod=sample(dsT,length(dsR),replace=T)
+  medianR=median(remuestreo_rod)
+  diff=medianC-medianR
+  null_dist_ds=c(null_dist_ds,diff)
+}
+
+diff_real_ds <- median(dsC)-median(dsR)
+
+pval_ds <- sum(null_dist_ds<=diff_real_ds)/n
+print(paste("P-value for dS difference: ",pval_ds))
+
+## Permutation test 3: dN
+n=10000
+dnT=c(dnC,dnR)
+null_dist_dn=NULL
+for (i in 1:n) {
+  remuestreo_cap=sample(dnT,length(dnC),replace=T)
+  medianC=median(remuestreo_cap)
+  remuestreo_rod=sample(dnT,length(dnR),replace=T)
+  medianR=median(remuestreo_rod)
+  diff=medianC-medianR
+  null_dist_dn=c(null_dist_dn,diff)
+}
+
+diff_real_dn <- median(dnC)-median(dnR)
+
+pval_dn <- sum(null_dist_dn<=diff_real_dn)/n
+print(paste("P-value for dN difference: ",pval_dn))
+```
+```{r,echo=FALSE}
+#Red line represents the observed value
+par(mfcol=c(3,1))
+hist(null_dist,xlim=c(-0.06,0.06),xlab=expression(paste(omega, " Capybara - ", omega, " Rodents")),main=expression(paste("Null distribution of differences in ", omega)))
+abline(v=diff_real,col="red",lwd=2)
+
+hist(null_dist_ds,xlim=c(-0.06,0.06),xlab=expression(paste(d[S], " Capybara - ", d[S], " Rodents")),main=expression(paste("Null distribution of differences in ", d[S])))
+abline(v=diff_real_ds,col="red",lwd=2)
+
+hist(null_dist_dn,xlim=c(-0.02,0.02),xlab=expression(paste(d[N], " Capybara - ", d[N], " Rodents")),main=expression(paste("Null distribution of differences in ", d[N])))
+abline(v=diff_real_dn,col="red",lwd=2)
+
+##Summary table
+omega <- c(0.0964,0.0674,"<0.001")
+dn_val <- c(0.006333,0.006917,0.2467)
+ds_val <- c(0.065452,0.108963,"<0.0001")
+t <- data.frame(omega,dn_val,ds_val)
+rownames(t) <- c("Capybara","Other Rodents","p-value")
+colnames(t) <- c("omega","dN","dS")
+knitr::kable(
+  t, caption = 'Median values for each substitution rate class'
+)
+```
+
+## Bootstrap analysis:
+Re-sampling of $\omega$ values per group (Capybara vs. Other rodents) and comparison of mean $\omega$ values between both groups.
+```{r, echo=FALSE}
+## BOOTSTRAP 1: dN/dS
+boot_Capybara=NULL
+n = 1000
+for (i in 1:n) {
+  remuestreo=sample(wC,length(wC),replace=T)
+  new_mean=mean(remuestreo)
+  boot_Capybara=c(boot_Capybara,new_mean)
+}
+
+boot_Rodents=NULL
+for (i in 1:n) {
+  remuestreo=sample(wR,length(wR),replace=T)
+  new_mean=mean(remuestreo)
+  boot_Rodents=c(boot_Rodents,new_mean)
+}
+
+sp <- rep(c("Other Rodents","Capybara"),each=1000)
+omegas <- c(boot_Rodents,boot_Capybara)
+tW <- data.frame(sp,omegas)
+
+## BOOTSTRAP 2: dS
+boot_Capybara_dS=NULL
+n = 1000
+for (i in 1:n) {
+  remuestreo=sample(dsC,length(dsC),replace=T)
+  new_mean=mean(remuestreo)
+  boot_Capybara_dS=c(boot_Capybara_dS,new_mean)
+}
+
+boot_Rodents_dS=NULL
+for (i in 1:n) {
+  remuestreo=sample(dsR,length(dsR),replace=T)
+  new_mean=mean(remuestreo)
+  boot_Rodents_dS=c(boot_Rodents_dS,new_mean)
+}
+
+sp <- rep(c("Other Rodents","Capybara"),each=1000)
+dS <- c(boot_Rodents_dS,boot_Capybara_dS)
+tS <- data.frame(sp,dS)
+
+## BOOTSTRAP 2: dN
+boot_Capybara_dN=NULL
+n = 1000
+for (i in 1:n) {
+  remuestreo=sample(dnC,length(dnC),replace=T)
+  new_mean=mean(remuestreo)
+  boot_Capybara_dN=c(boot_Capybara_dN,new_mean)
+}
+
+boot_Rodents_dN=NULL
+for (i in 1:n) {
+  remuestreo=sample(dnR,length(dnR),replace=T)
+  new_mean=mean(remuestreo)
+  boot_Rodents_dN=c(boot_Rodents_dN,new_mean)
+}
+
+sp <- rep(c("Other Rodents","Capybara"),each=1000)
+dN <- c(boot_Rodents_dN,boot_Capybara_dN)
+tN <- data.frame(sp,dN)
+```
+```{r,echo=FALSE,fig.width = 12}
+Wp <- ggplot(tW, aes(x=sp, y=omegas)) + geom_violin(trim=FALSE,fill="gray") + geom_boxplot(width=0.1)+ xlab("Taxon") + ylab("Mean nuclear dN/dS")+ theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=7),axis.text.y = element_text(face="bold", size=15), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=15))+ annotate("text",x=2,y=0.2,label='italic(P) == 2.2e-16',parse=TRUE,size=3)
+
+dSp <- ggplot(tS, aes(x=sp, y=dS)) + geom_violin(trim=FALSE,fill="gray") + geom_boxplot(width=0.1)+ xlab("Taxon") + ylab("Mean nuclear dS")+ theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=7),axis.text.y = element_text(face="bold", size=15), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=15))+ annotate("text",x=2,y=0.14,label='italic(P) == 2.2e-16',parse=TRUE,size=3)
+
+dNp <- ggplot(tN, aes(x=sp, y=dN)) + geom_violin(trim=FALSE,fill="gray") + geom_boxplot(width=0.1)+ xlab("Taxon") + ylab("Mean nuclear dN")+ theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=7),axis.text.y = element_text(face="bold", size=15), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=15))+ annotate("text",x=2,y=0.015,label='italic(P) == 2.2e-16',parse=TRUE,size=3)
+
+ggarrange(Wp, dSp, dNp + rremove("x.text"),labels = c("A", "B", "C"),ncol = 3, nrow = 1)
+```
+
+Although this time the difference in mean $d_N$ values is significant, is clearly less dramatic than the difference between mean $d_S$ values, suggesting again that the higher mean $\omega$ value in the capybara is driven by a low $d_S$.
+
+These analyses clearly suggest that the higher mean $\omega$ value observed in the capybara is mainly due to a low synonymous substitution rate relative to the rest of rodents. Using the synonymous substitution rate as a surrogate for the mutation rate, and acknowledging the negative relationship between mutation rate and generation time, the higher mean $\omega$ value in the capybara is compatible with a reduction in population size due to a longer generation time caused by an increase in body size.
+
+
+## Body mass and generation time explain mean $\omega$
+
+We performed a correlation of the mean $\omega$ values observed in each species with the body mass and generation time, to understand how body mass affects genome evolution, particularly, the accumulation of slightly deleterious mutations.
+
+To control by the potential counfunding effect of shared ancestry, we performed Phylogenetic Independet Constrasts (PIC; Felsenstein, 1985).
+
+We also checked for outliers, and identified that genome-wide median $\omega$ values for naked mole rat and squirrel were too high and low, respectively, according to a standardized residual analysis (see boxplots). Given that there seems to be a biologically reasonable (and different) explanation for the inflation in $\omega$ in the naked mole rat, we decided not to take that value as part for downstream analyses (see also AIC values comparing the model fitting between a model with (mod.a) and without (mod.a2) the naked mole rat data point).
+
+```{r, warning=FALSE}
+#Body mass values - data in grams
+#Generation times values extracted from AnAge database - data in days (BMRat value estimated from european mole rat).
+tr <- read.tree("../OrthoMaM_370-SCOs_17genomes_RAxML.tre")
+tab <- read.csv("../omegaNuc_vs_bodyMass.csv",row.names=2)
+omega<-setNames(tab$median_omega,rownames(tab))
+
+#PIC's body mass and nuclear dN/dS
+ln.mass <- setNames(tab$ln.masa,rownames(tab))
+tr.masaOmega<-drop.tip(tr,name.check(tr,omega)$tree_not_data)
+IC.logMass<-pic(ln.mass,tr.masaOmega)
+IC.Omega<-pic(omega,tr.masaOmega)
+
+mod.a <- lm(IC.Omega~IC.logMass)
+summary(mod.a)
+
+#PIC's generation time and nuclear dN/dS
+tab$ln.gen_time <- log(tab$gen.time_days)
+ln.GT <- setNames(tab$ln.gen_time,rownames(tab))
+tr.GTomega<-drop.tip(tr,name.check(tr,omega)$tree_not_data)
+IC.logGT<-pic(ln.GT,tr.GTomega)
+IC.Omega<-pic(omega,tr.GTomega)
+
+mod.b <- lm(IC.Omega~IC.logGT)
+summary(mod.b)
+
+#Correlation body mass and generation time
+cor.test(IC.logMass,IC.logGT, method="spearman")
+
+#Interaction between BM and GT explaining variation in dN/dS
+tab$ln.GTxBM <- log(tab$masa_gr*tab$gen.time)
+ln.GTxBM <- setNames(tab$ln.GTxBM,rownames(tab))
+tr.masaOmega<-drop.tip(tr,name.check(tr,omega)$tree_not_data)
+IC.logGTxBM<-pic(ln.GTxBM,tr.masaOmega)
+mod.c <- lm(IC.Omega~IC.logGTxBM)
+
+  ## Standardized residuals analysis to detect outliers: Naked moles rat and squirrel omega values are outliers.
+reg1 <- lm(omega~ln.mass) #model with body mass
+leverage1 <- hat(model.matrix(reg1)) #Find leverage for each residual
+se <- function(x){sd(x)/sqrt(length(x))} # Standard error of the mean
+# Standardized residuals: res_i/sqrt(MSE(1-leverage))
+st_res1 <- reg1$residuals/(sqrt(se(reg1$residuals)*(1-leverage1)))
+boxplot(st_res1,main="Std. residuals omega~ln.mass")
+
+reg2 <- lm(omega~ln.mass) #model with generation time
+leverage2 <- hat(model.matrix(reg2)) 
+st_res2 <- reg2$residuals/(sqrt(se(reg2$residuals)*(1-leverage2)))
+boxplot(st_res2,main="Std. residuals omega~ln.GT")
+
+  ##Analysis without naked mole rat
+## 1) Body mass and omega
+tr2.masa <- drop.tip(tr.masaOmega,"NMRat")
+tab2 <- tab[-16,]
+omega2<-setNames(tab2$median_omega,rownames(tab2))
+ln.mass2 <- setNames(tab2$ln.masa,rownames(tab2))
+IC.logMass2<-pic(ln.mass2,tr2.masa)
+IC.Omega2<-pic(omega2,tr2.masa)
+
+mod.a2 <- lm(IC.Omega2~IC.logMass2)
+summary(mod.a2)
+
+##2) Gen. time and omega
+tr2.gt <- drop.tip(tr.GTomega,"NMRat")
+tab2 <- tab[-16,]
+omega2<-setNames(tab2$median_omega,rownames(tab2))
+ln.GT2 <- setNames(tab2$ln.gen_time,rownames(tab2))
+IC.logGT2<-pic(ln.GT2,tr2.gt)
+IC.Omega2<-pic(omega2,tr2.gt)
+
+mod.b2 <- lm(IC.Omega2~IC.logGT2)
+summary(mod.b2)
+
+# Comparison between models: Excluding the naked mole rat increases the Likelihood of the model.
+AIC(mod.a,mod.a2,mod.b,mod.b2,mod.c)
+
+#library(gvlma)
+#Assessment of linear model assumptions
+#g <- gvlma(mod) 
+#summary(g)
+```
+```{r,echo=FALSE,fig.width=12}
+d <- data.frame(ln.mass,omega)
+a <- ggplot(d, aes(x=ln.mass, y= omega)) + geom_point(color="black") + geom_smooth(method = "lm", se = TRUE) + xlab("Ln(BM)") + ylab(expression(paste("median ",omega))) + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle(expression(paste("Body mass and ",omega))) + annotate("text",x=8,y=0.1,label='R2 == 0.28',parse=TRUE,size=3) + annotate("text",x=8,y=0.095,label='italic(P) == 0.023',parse=TRUE,size=3)
+
+d.1 <- data.frame(ln.mass2,omega2)
+a.1 <- ggplot(d.1, aes(x=ln.mass2, y= omega2)) + geom_point(color="black") + geom_smooth(method = "lm", se = TRUE) + xlab("Ln(BM)") + ylab(expression(paste("median ",omega))) + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle(expression(paste("Body mass and ",omega, " without H. glaber"))) + annotate("text",x=8,y=0.1,label='R2 == 0.56',parse=TRUE,size=3) + annotate("text",x=8,y=0.095,label='italic(P) == 0.001',parse=TRUE,size=3)
+
+d2 <- data.frame(ln.GT,omega)
+b <- ggplot(d2, aes(x=ln.GT, y= omega)) + geom_point(color="black") + geom_smooth(method = "lm", se = TRUE) + xlab("Ln(GT)") + ylab(expression(paste("median ",omega))) + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle(expression(paste("Generation time and ",omega))) + annotate("text",x=5,y=0.08,label='R2 == 0.27',parse=TRUE,size=3) + annotate("text",x=5,y=0.075,label='italic(P) == 0.026',parse=TRUE,size=3)
+
+d3 <- data.frame(IC.logMass,IC.logGT)
+label <- expression(paste(rho," = 0.53"))
+c <- ggplot(d3, aes(x=IC.logMass, y=IC.logGT)) + geom_point(color="black") + geom_smooth(method = "lm", se = TRUE) + xlab("Ln(BM)") + ylab("Ln(GT)") + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle("Body mass and generation time") + annotate("text",x=0,y=-5,label=label,parse=TRUE,size=3) + annotate("text",x=0,y=-5.9,label='italic(P) == 0.042',parse=TRUE,size=3)
+
+ggarrange(a,a.1, b, c ,ncol = 2, nrow = 2)
+
+
+labels_rate <- c(
+  "median_omega" = expression(omega), 
+  "median_dn" = "dN", 
+  "median_ds" = "dS"
+)
+
+lnBM <- rep(tab$ln.masa,3)
+tab2 <- dplyr::select(tab,median_omega,median_dn,median_ds) %>% melt()
+tab2$BM <- lnBM
+x <- ggplot(tab2,aes(BM, value, shape=variable,colour=variable, fill=variable)) +
+  geom_smooth(method="lm") +
+  geom_point(size=3) + ggtitle("Body mass and molecular rates") + xlab("Ln(BM)") + ylab("Molecular rate") + scale_shape(labels = labels_rate) + 
+  scale_colour_discrete(labels = labels_rate) + 
+  guides(fill = "none")
+
+lnGT <- rep(tab$ln.gen_time,3)
+tab3 <- dplyr::select(tab,median_omega,median_dn,median_ds) %>% melt()
+tab3$GT <- lnGT
+y <- ggplot(tab3,aes(GT, value, shape=variable,colour=variable, fill=variable)) +
+  geom_smooth(method="lm") +
+  geom_point(size=3) + ggtitle("Generation time and molecular rates") + xlab("Ln(GT)") + ylab("Molecular rate") + scale_shape(labels = labels_rate) + 
+  scale_colour_discrete(labels = labels_rate) + 
+  guides(fill = "none")
+
+ggarrange(x,y, ncol = 2, nrow = 1)
+```
+
+The elevated $\omega$ in the capybara seems to still be compatible with the assumption of mutation load caused by higher genetic drift relative purifying selection: the capybara seems to have comparatively a higher number of fixed nearly deleterious mutations despite a lower synonymous substitution rate. Interestingly, however, the effect might be driven by the longer generation time (correlated to the size) which causes an overall lower $d_S$.
+
+### Heatmap of $\omega$ values for mitochondrial genes
+
+The following heatmap shows the standardized (z-score) $\omega$ values for the 13 protein-coding mitochondrial genes of 10 rodents. Visually, it appears to be two groups based on the $\omega$ values: one group with 'high' mt-genome-wide $\omega$ corresponding to hystricognath rodents, and another group with 'low' mt-genome-wide $\omega$ with the remaining species.
+
+```{r,message=FALSE,warning=FALSE, echo=FALSE}
+df <- read.csv("../mt_genes_omegas.csv")
+
+IDs <- unique(df$mt_gene)
+df_Z <- df[df$mt_gene == IDs[1], ]
+df_Z$z_score <- scale(df_Z$omega)
+
+for (i in 2:length(IDs)) {
+  temp <- df[df$mt_gene == IDs[i], ]
+  temp$z_score <- scale(temp$omega)
+  df_Z <- rbind(df_Z, temp)
+}
+
+library(ggplot2)
+df_Z$spp <- factor(df_Z$spp, 
+                     levels = c("Hhyd", "Cpor", "Clan","Odeg", "Hgla", "Mmus", "Rnor", "Maur", "Ngal", "Jjac"))
+
+ggplot(df_Z, aes(spp, mt_gene)) + geom_tile(aes(fill = z_score),color = "white") + 
+  scale_fill_distiller(palette = "Spectral") + 
+  ylab("mitochondrial CDS") + xlab("Species") + 
+  theme(legend.title = element_text(size = 12),legend.text = element_text(size = 12), 
+        legend.position = "top", plot.title = element_text(size = 16), 
+        axis.title = element_text(size = 14, face = "bold"), 
+        axis.text.x = element_text(angle = 90, hjust = 1, size = 15), 
+        axis.text.y = element_text(size = 6)) + 
+  labs(fill = "Raw Z-score")
+```
+
+
+## Nuclear $\omega$ and mitochondrial $\omega$
+
+To corroborate that the mutation load was caused by a demographic effect, we plotted the nuclear genome-wide median $\omega$, i.e., $nuc_\omega$ vs. the mitochondrial genome-wide median $\omega$, i.e., $mt_\omega$, for each species for which both genome were available. We tested the hypothesis that under demographic bottlenecks, drift should affect both genomes (Piganeau & Eyre-Walker, 2009). According to this hypothesis, we expected that the capybara and the naked mole rat, which independently evolved towards a lower Ne, driven by an increased body size and fossoriality-eusociality, respectively, should present higher $\omega$ values in both genomes, relative to the rest of rodents. Consistent with this, both species showed genome-wide median $\omega$ values, for both genomes, above the mean for the entire clade, suggesting that both species suffered a reduction in Ne.
+
+```{r}
+omega_mt_nuc <- read.csv("../omegaMt_Nuc_vs_bodyMass.csv",row.names=2)
+
+ggplot(omega_mt_nuc, aes(x = median_nuc_w, y = median_mt_w, color=ln.masa)) +
+  geom_point() + xlab(expression(paste("nuc"[omega], " (229 SCOs)"))) + ylab(expression(paste("mt"[omega]," (13 CDSs)"))) + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) +
+  geom_vline(data=omega_mt_nuc,aes(xintercept=mean(omega_mt_nuc$median_nuc_w)),linetype="dashed") +
+  geom_hline(data=omega_mt_nuc,aes(yintercept=mean(omega_mt_nuc$median_mt_w)),linetype="dashed") +
+  geom_text_repel(data=omega_mt_nuc,aes(label=sp),fontface = 'bold', color = 'black', box.padding = unit(0.35, "lines"), point.padding = unit(0.5, "lines")) +
+  scale_color_gradient(low="#56B4E9", high="#D55E00") + labs(color="log(Mass)")
+```
+
+The correlation between nuclear and mitochondrial $\omega$ values across species was estimated, under the hypothesis that a demographic bottleneck should affect both genomes. Consistent with this, there is a possitive correlation, even when the capybara and the naked mole rat are excluded.
+
+```{r}
+omega_mt_nuc2 <- omega_mt_nuc %>% filter(sp != "Hgla") %>% filter(sp != "Hhyd")
+
+cor.test(omega_mt_nuc$median_nuc_w,omega_mt_nuc$median_mt_w,method="spearman")
+cor.test(omega_mt_nuc2$median_nuc_w,omega_mt_nuc2$median_mt_w,method="spearman")
+```
+
+##'Dissection' of the second peak in the capybara
+
+The distribution of $d_N/d_S$ values in the capybara is bimodal, with one peak close to the mean of the rest of rodents, and the other peak at ~0.5. To understand the processes underlying the appearance of the second peak, we extracted genes with $d_N/d_S$ >= 0.35 (dashed line; where the second peak starts), resulting in 33 genes.
+
+```{r,echo=FALSE}
+dC <- data.frame(wC,rep("Capybara",226))
+colnames(dC) <- c("w","spp")
+ggplot(dC, aes(x=w)) + geom_density(aes(group=spp,colour=spp,fill=spp),alpha=0.7)+ scale_x_continuous(limits = c(-0.2, 2)) + labs(x="Nuclear dN/dS", y="Density")+scale_fill_manual(values=c("deepskyblue"), name="Taxon")+scale_color_manual(values=c("black", "black"),name="Taxon") + theme(legend.position = "none") + geom_vline(data=m, aes(xintercept=0.35, colour=tax),linetype="dashed")+ theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle(expression(paste("Capybara ",omega, " values")))
+```
+
+To test the hypothesis that the second bump might have genes under positive selection, a GO enrichment test on this set of 33 genes was performed to determine if the second peak is enriched for some biologically relevant genes. These 33 genes are enriched in 22 Biological process (out of 122; p-values < 0.05 after Bonferroni correction) which mainly include metabolic processes (e.g. tRNA metabolic process, DNA metabolic process, transferase activity, transferring acyl groups, generation of precursor metabolites and energy, methyltransferase activity) occurring in the mitochondrion and cytoplasm. According to these results, a potential adaptive shift related to an increase in basal metabolic rate, which has been associated with an increase in body size, may be causing the bimodal distribution in the capybara.
+
+```{r}
+##GO enrichment analysis using Guinea pig Ensembl protein IDs with biomaRt
+outdat <- read.table("../omega_values.txt",h=TRUE)
+outliers <- outdat[outdat$Capybara>=0.35 & outdat$Capybara<=2,]
+outliers_accnum <- outliers$Cavpor_AccNumber
+todos_accnum <- outdat$Cavpor_AccNumber
+
+ensembl=useMart("ensembl")
+cpor_ensembl <-  useMart("ensembl", dataset = "cporcellus_gene_ensembl")
+out = getBM(attributes = c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description","percentage_gene_gc_content"), filters="refseq_mrna_predicted", values = as.character(outliers_accnum), mart = cpor_ensembl)
+all = getBM(attributes = c("ensembl_peptide_id","external_gene_name","go_id","goslim_goa_description","percentage_gene_gc_content","refseq_mrna_predicted"), filters="refseq_mrna_predicted", values = as.character(todos_accnum), mart = cpor_ensembl)
+
+all_GOs <- all$goslim_goa_description
+out_GOs <- out$goslim_goa_description
+unique_out_GOs <- unique(out$goslim_goa_description)
+fisherPvalues_out <- c()
+GO_term <- c()
+
+for(i in 1:length(unique_out_GOs)){
+  a <- sapply(unique_out_GOs[i],function(x) sum(x==out_GOs))
+  b <- sapply(unique_out_GOs[i],function(x) sum(x==all_GOs))
+  c <- length(out_GOs)-a
+  d <- length(all_GOs)-b
+  f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")
+  GO_term <- c(GO_term,as.character(unique_out_GOs[i]))
+  fisherPvalues_out <- c(fisherPvalues_out,f$p.value)
+}
+fisherPvalues_out_Bonferroni <- p.adjust(fisherPvalues_out,method="bonferroni",n=length(fisherPvalues_out))
+out_fisherResults <- data.frame(GO_term,fisherPvalues_out,fisherPvalues_out_Bonferroni)
+significativas_out <- out_fisherResults[out_fisherResults$fisherPvalues_out_Bonferroni<0.05,]
+significativas_out
+```
+
+Moreover, genes in the second peak have significantly higher median $d_N$ relative to the genes in the first peak, pointing to a posible adaptive shift.
+
+```{r}
+capybara_w <- outdat %>% dplyr::select(Hhyd_Code,Capybara) %>% mutate(capybara_w = Capybara) %>% dplyr::select(Hhyd_Code,capybara_w)
+dsTab <- read.table("../dS_values.txt",h=TRUE) %>% dplyr::select(Hhyd_Code,Capybara) %>% mutate(capybara_ds = Capybara) %>% dplyr::select(Hhyd_Code,capybara_ds)
+dnTab <- read.table("../dN_values.txt",h=TRUE) %>% dplyr::select(Hhyd_Code,Capybara) %>% mutate(capybara_dn = Capybara) %>% dplyr::select(Hhyd_Code,capybara_dn)
+
+totalTab <- inner_join(dsTab, dnTab,  by = "Hhyd_Code")
+totalTab <- inner_join(totalTab, capybara_w,  by = "Hhyd_Code")
+
+#Extracting genes from each peak
+lowdnds <- outdat[outdat$Capybara<0.35,]
+lowdnds_accnum <- lowdnds$Hhyd_Code
+highdnds <- outdat[outdat$Capybara>=0.35 & outdat$Capybara<=2,]
+highdnds_accnum <- highdnds$Hhyd_Code
+w_filt_lowdnds <- subset(totalTab,Hhyd_Code %in% lowdnds_accnum)
+w_filt_highdnds <- subset(totalTab,Hhyd_Code %in% highdnds_accnum)
+
+#Comparison of dS and dN between peaks
+t.test(w_filt_lowdnds$capybara_ds,w_filt_highdnds$capybara_ds)
+t.test(w_filt_lowdnds$capybara_dn,w_filt_highdnds$capybara_dn)
+```
+
+To evaluate additional factors, other than a potential adaptive shift, that could explain the bimodal distribution of genome-wide $\omega$ in the capybara, we focused on GC composition (%GC). Interestingly, the figure below shows that GC content of the genes to the left of the dashed line (low-$\omega$ genes) is higher than that of the genes to the right of the dashed line (high-$\omega$ genes). 
+
+```{r,warning=FALSE}
+gc_tbl <- read.table("../GC_content_capybara.txt",h=TRUE)
+gc_filt_lowdnds <- subset(gc_tbl,Hhyd_Code %in% lowdnds_accnum)
+gc_filt_highdnds <- subset(gc_tbl,Hhyd_Code %in% highdnds_accnum)
+
+gc <- c(gc_filt_lowdnds$GC_content_total,gc_filt_highdnds$GC_content_total)
+gene_class <- c(rep("Left",length(gc_filt_lowdnds$GC_content_total)),rep("Right",length(gc_filt_highdnds$GC_content_total)))
+gc_table <- data.frame(gene_class,gc)
+
+t.test(gc_filt_lowdnds$GC_content_total,gc_filt_highdnds$GC_content_total)
+
+ggplot(gc_table, aes(x=gene_class, y=gc)) + geom_violin(trim=FALSE,fill="gray") + geom_boxplot(width=0.1) + 
+  xlab(expression(paste("Peak in ",omega," distribution"))) +
+  ylab("% GC") +
+  theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=15),axis.text.y = element_text(face="bold", size=15), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + annotate("text",x=1.5,y=75,label="italic(P) < 0.001",parse=TRUE,size=4,fontface=2) + annotate("text",x=1,y=30,label="N=193",size=4,fontface=1) + annotate("text",x=2,y=30,label="N=33",size=4,fontface=1)
+
+```
+
+> - Mean %GC high-$\omega$ genes: 51.362 (N=33)
+> - Mean %GC low-$\omega$ genes: 57.526 (N=193)
+> - p-value < 0.0001
+
+The figure below shows the correlation between GC content and each substitution rate class in the capybara. GC content is weakly positively correlated with $d_S$ and weakly negatively correlated with $d_N$. This results in genes with lower GC content having higher $\omega$ relative to the genes with high GC content, corroborating the observations outlined above.
+
+```{r}
+totalTab <- inner_join(totalTab, gc_tbl,  by = "Hhyd_Code")
+
+code <- rep(totalTab$Hhyd_Code,3)
+omega <- totalTab$capybara_w
+subs_rate <- c(totalTab$capybara_ds,totalTab$capybara_dn,omega)
+subs_rate_class <- c(rep("dS",length(totalTab$capybara_ds)),rep("dN",length(totalTab$capybara_dn)),rep("w",length(omega)))
+gc <- rep(totalTab$GC_content_total,3)
+finalTab <- data.frame(code,subs_rate,subs_rate_class,gc)
+
+mod_ds <- lm(totalTab$capybara_ds~totalTab$GC_content_total)
+mod_dn <- lm(totalTab$capybara_dn~totalTab$GC_content_total)
+```
+
+```{r, echo=FALSE}
+dn_filt_lowdnds <- subset(finalTab,code %in% lowdnds_accnum) %>% 
+  dplyr::filter(subs_rate_class == "dN")
+
+dn_filt_highdnds <- subset(finalTab,code %in% highdnds_accnum) %>% 
+  dplyr::filter(subs_rate_class == "dN")
+
+t.test(dn_filt_highdnds$subs_rate,dn_filt_lowdnds$subs_rate)
+mean(dn_filt_highdnds$subs_rate)
+mean(dn_filt_lowdnds$subs_rate)
+
+ds_filt_lowdnds <- subset(finalTab,code %in% lowdnds_accnum) %>% 
+  dplyr::filter(subs_rate_class == "dS")
+
+ds_filt_highdnds <- subset(finalTab,code %in% highdnds_accnum) %>% 
+  dplyr::filter(subs_rate_class == "dS")
+
+t.test(ds_filt_highdnds$subs_rate,ds_filt_lowdnds$subs_rate)
+mean(ds_filt_highdnds$subs_rate)
+mean(ds_filt_lowdnds$subs_rate)
+```
+
+```{r,echo=FALSE,fig.width=12}
+nss <- finalTab %>% dplyr::filter(subs_rate_class == "dS" | subs_rate_class == "dN")
+a <- ggplot(nss, aes(gc,subs_rate, shape=subs_rate_class, colour=subs_rate_class, fill=subs_rate_class)) +
+  geom_smooth(method="lm") +
+  geom_point(size=3) +
+  theme_bw() + 
+  xlab("% GC") +
+  ylab("Substitution rate") +
+  theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle("Capybara: subs. rates and GC")
+
+##GC content and dN/dS
+w <- finalTab %>% dplyr::filter(subs_rate_class == "w")
+b <- ggplot(w, aes(gc,subs_rate)) +
+  geom_smooth(method="lm") +
+  geom_point(size=1.5) + theme_bw() +
+  theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle(expression(paste("Capybara: GC content and ", omega))) + xlab("% GC") + ylab(expression(paste("Nuclear ",omega)))
+
+ggarrange(a,b, ncol = 2, nrow = 1,labels = c("A", "B"))
+
+#Summary table
+ds_mod <- c(0.0011,0.044,"<0.0001")
+dn_mod <- c(-0.00036,0.04,"<0.01")
+tb <- data.frame(dn_mod,ds_mod)
+rownames(tb) <- c("Effect","R2","p-value")
+colnames(tb) <- c("dN","dS")
+knitr::kable(
+  tb, caption = 'GC content explains a low fraction of substitution rate class variation in Capybara'
+)
+```
+
+
+This pattern is also true for the guinea pig (below), suggesting that the observed effect of GC content on substitution rates is unlikely to be an artifact of sequencing errors (although GC is only positively correlated with ds). Moreover, genomic GC content of the capybara was estimated at 39.79% and guinea pig GC content is 40.1%. Moreover, it suggests %GC alone is unlikely to be driving the observed bimodal distribution in the capybara. 
+
+```{r,echo=FALSE,warning=FALSE}
+capor_accnum <- outdat$Cavpor_AccNumber
+cpor_gc = getBM(attributes = c("refseq_mrna_predicted","percentage_gene_gc_content"), filters="refseq_mrna_predicted", values = as.character(capor_accnum), mart = cpor_ensembl)
+
+gc_values <- c(cpor_gc$percentage_gene_gc_content,gc_tbl$GC_content_total)
+spp <- c(rep("Guinea pig",length(cpor_gc$percentage_gene_gc_content)),rep("Capybara",length(gc_tbl$GC_content_total)))
+gc_comp <- data.frame(gc_values,spp)
+#t.test(gc_tbl$GC_content_total,cpor_gc$percentage_gene_gc_content)
+
+dsTab_cpor <- read.table("../dS_values.txt",h=TRUE)[,c("Cavpor_AccNumber","GuineaPig")] %>% mutate(cpor_ds = GuineaPig) %>% dplyr::select(Cavpor_AccNumber,GuineaPig) %>% mutate(cpor_ds = GuineaPig) %>% dplyr::select(Cavpor_AccNumber,cpor_ds)
+dnTab_cpor <- read.table("../dN_values.txt",h=TRUE)[,c("Cavpor_AccNumber","GuineaPig")]  %>% mutate(cpor_dn = GuineaPig) %>% dplyr::select(Cavpor_AccNumber,GuineaPig) %>% mutate(cpor_dn = GuineaPig) %>% dplyr::select(Cavpor_AccNumber,cpor_dn)
+
+totalTab_2 <- inner_join(dsTab_cpor, dnTab_cpor,  by = "Cavpor_AccNumber")
+cpor_gc <- mutate(cpor_gc,Cavpor_AccNumber = refseq_mrna_predicted)
+cpor_gc <- cpor_gc[,c("Cavpor_AccNumber","percentage_gene_gc_content")]
+totalTab_2 <- inner_join(totalTab_2, cpor_gc,  by = "Cavpor_AccNumber")
+
+code <- rep(totalTab_2$Cavpor_AccNumber,2)
+subs_rate <- c(totalTab_2$cpor_ds,totalTab_2$cpor_dn)
+subs_rate_class <- c(rep("dS",length(totalTab_2$cpor_ds)),rep("dN",length(totalTab_2$cpor_dn)))
+gc <- rep(totalTab_2$percentage_gene_gc_content,2)
+finalTab_2 <- data.frame(code,subs_rate,subs_rate_class,gc)
+
+ggplot(finalTab_2, aes(gc,subs_rate, shape=subs_rate_class, colour=subs_rate_class, fill=subs_rate_class)) +
+  geom_smooth(method="lm") +
+  geom_point(size=3) +
+  theme_bw() + 
+  xlab("% GC") +
+  ylab("Substitution rate") +
+  theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + ggtitle("Guinea pig")
+
+#mod_ds <- lm(totalTab_2$cpor_ds~totalTab_2$percentage_gene_gc_content)
+#mod_dn <- lm(totalTab_2$cpor_dn~totalTab_2$percentage_gene_gc_content)
+
+#Summary table
+ds_mod <- c(0.0023,0.1835,"<0.0001")
+dn_mod <- c(0,0,0.457)
+tb2 <- data.frame(dn_mod,ds_mod)
+rownames(tb2) <- c("Effect","R2","p-value")
+colnames(tb2) <- c("dN","dS")
+knitr::kable(
+  tb2, caption = 'GC content explains each substitution rate class variation in Guinea pig'
+)
+```
+
+```{r,echo=FALSE,eval=FALSE}
+##Figure in paper
+a <- ggplot(dat.omega, aes(x=w)) + geom_density(aes(group=spp,colour=spp,fill=spp),alpha=0.8)+ scale_x_continuous(limits = c(-0.2, 2)) + labs(x=expression(paste("Nuclear ",omega)), y="Density")+scale_fill_manual(values=c("darkorchid", "#999999"), name="Taxon")+scale_color_manual(values=c("black", "black"),name="Taxon") + theme(legend.position = c(0.4, 0.83),legend.background = element_rect(color = "black", fill = "white", size = 0.5, linetype = "solid"),legend.title = element_text(size=10, face="bold"),legend.text=element_text(size=10)) + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + geom_vline(aes(xintercept=0.35),linetype="dashed",colour="red")
+
+d4 <- data.frame(ln.mass,ln.GT)
+label <- expression(paste(rho," = 0.53"))
+b <- ggplot(d4, aes(x=ln.mass, y=ln.GT)) + geom_point(color="black") + geom_smooth(method = "lm", se = TRUE,colour="black") + xlab("Ln(BM)") + ylab("Ln(GT)") + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + annotate("text",x=5,y=7.3,label=label,parse=TRUE,size=3.5) + annotate("text",x=5,y=7,label='italic(P) == 0.04',parse=TRUE,size=3.5)
+
+tab2 <- tab[-16,]
+d <- data.frame(tab2$ln.masa,tab2$median_omega)
+c <- ggplot(d, aes(x=tab2.ln.masa, y= tab2.median_omega)) + geom_point(color="black") + geom_smooth(method = "lm", se = TRUE,colour="black") + xlab("Ln(BM)") + ylab(expression(paste("median ",omega))) + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) + annotate("text",x=7,y=0.095,label='italic(P) == 0.0011',parse=TRUE,size=3.5) + annotate("text",x=7,y=0.10,label=expression(paste("R"^2, " = 0.56")),parse=TRUE,size=3.5)
+
+lnBM <- rep(tab2$ln.masa,2)
+tab3 <- dplyr::select(tab,median_dn,median_ds) %>% melt()
+tab3$BM <- lnBM
+e <- ggplot(tab3,aes(BM, value, shape=variable, fill=variable, colour=variable)) +
+  geom_smooth(method="lm",colour="black", fill = "gray") +
+  geom_point(size=3) + xlab("Ln(BM)") + ylab("Molecular distance") + scale_shape_manual(labels = labels_rate, values = c(19,17)) + 
+  scale_color_manual(labels = labels_rate, values=c("#0072B2","#D55E00")) +
+  theme(panel.background = element_rect(fill = "white", colour = "black"), 
+          panel.grid.major = element_blank(), panel.grid.minor = element_blank(), 
+          axis.text.x = element_text(face="bold", size=10), 
+          axis.text.y = element_text(face="bold", size=10), 
+          axis.title.y = element_text(face="bold", size=20), 
+          axis.title.x = element_text(face="bold", size=20)) +
+  theme(legend.title = element_blank(), legend.position = c(0.6, 0.8)) +
+  guides(fill = "none")
+
+ggarrange(b,c,e, ncol = 3, nrow = 1,labels = c("A","B","C"))
+
+###Fig S6 (usar quartz() para dibujar figura)
+box <- ggplot(gc_table, aes(x=gene_class, y=gc)) + geom_violin(trim=FALSE,fill="gray") + geom_boxplot(width=0.1) + 
+  xlab(expression(paste("Peak in ",omega," distribution"))) +
+  ylab("% GC") + theme_bw() +
+  theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=15),axis.text.y = element_text(face="bold", size=15), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=15)) + annotate("text",x=1.5,y=75,label="italic(P) < 0.001",parse=TRUE,size=4,fontface=2) + annotate("text",x=1,y=30,label="N=193",size=4,fontface=1) + annotate("text",x=2,y=30,label="N=33",size=4,fontface=1) + ggtitle(expression(paste("Raw ",omega, " and %GC")))
+
+omega<-setNames(tab$median_omega,rownames(tab))
+ln.mass<-setNames(tab$ln.masa,rownames(tab))
+d2 <- data.frame(ln.mass,omega)
+d.2 <- ggplot(d2, aes(x=ln.mass, y= omega)) + geom_point(color="black") + geom_smooth(method = "lm", se = TRUE) + xlab("Ln(BM)") + ylab(expression(paste("median ",omega))) + theme_bw() + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=15)) + ggtitle(expression(paste("Generation time and ",omega))) + annotate("text",x=5,y=0.09,label='R2 == 0.28',parse=TRUE,size=3) + annotate("text",x=5,y=0.084,label='italic(P) == 0.023',parse=TRUE,size=3) + ggtitle(expression(paste("Body mass and ",omega)))
+
+d3 <- data.frame(ln.GT,omega)
+d.3 <- ggplot(d2, aes(x=ln.GT, y= omega)) + geom_point(color="black") + geom_smooth(method = "lm", se = TRUE) + xlab("Ln(GT)") + ylab(expression(paste("median ",omega))) + theme_bw() + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=15)) + ggtitle(expression(paste("Generation time and ",omega))) + annotate("text",x=5,y=0.09,label='R2 == 0.37',parse=TRUE,size=3) + annotate("text",x=5,y=0.084,label='italic(P) == 0.009',parse=TRUE,size=3) + ggtitle(expression(paste("Generation time and ",omega)))
+
+d.5 <- ggplot(finalTab, aes(gc,subs_rate, shape=subs_rate_class,fill=subs_rate_class,colour=subs_rate_class)) +
+  geom_smooth(method="lm") +
+  geom_point(size=1.1) +
+  theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=10),axis.text.y = element_text(face="bold", size=10), axis.title.y = element_text(face="bold", size=10),axis.title.x = element_text(face="bold", size=15)) +
+  theme(legend.position = c(0.08, 0.75),legend.background = element_rect(color = "black", fill = "white", size = 0.5, linetype = "solid"),legend.title = element_text(size=8, face="bold"),legend.text=element_text(size=8)) +
+  scale_fill_manual(name="Subs. rate class",values=c("#E69F00", "#0072B2","#756BB1"),labels=c(expression(paste("dN (",beta,"=-0.0003, p<0.01)")),expression(paste("dS (",beta,"=0.001, p<0.0001)")),expression(paste(omega," (R"^2,"=0.074, p<0.0001)")))) + labs(x="% GC", y="Substitution rate") +
+  scale_color_manual(values=c("#E69F00", "#0072B2","#756BB1"),name="Subs. rate class",labels=c(expression(paste("dN (",beta,"=-0.0003, p<0.01)")),expression(paste("dS (",beta,"=0.001, p<0.0001)")),expression(paste(omega," (R"^2,"=0.074, p<0.0001)")))) + 
+  scale_shape_manual(values=c(15,17,20),name="Subs. rate class",labels=c(expression(paste("dN (",beta,"=-0.0003, p<0.01)")),expression(paste("dS (",beta,"=0.001, p<0.0001)")),expression(paste(omega," (R"^2,"=0.074, p<0.0001)")))) + ylim(0,1) + 
+  ggtitle(expression(paste("Effect of %GC on ",omega, " values")))
+
+ggarrange(box, d.5, d.2, d.3, ncol = 2, nrow = 2,labels = c("A", "B", "C","D"))
+
+###Fig. S7
+p1 <- ggplot(omega_mt_nuc, aes(x = median_nuc_w, y = median_mt_w, color=ln.masa)) +
+  geom_point() + xlab(expression(paste("nuc"[omega], " (229 SCOs)"))) + ylab(expression(paste("mt"[omega]," (13 CDSs)"))) + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) +
+  geom_vline(data=omega_mt_nuc,aes(xintercept=mean(omega_mt_nuc$median_nuc_w)),linetype="dashed") +
+  geom_hline(data=omega_mt_nuc,aes(yintercept=mean(omega_mt_nuc$median_mt_w)),linetype="dashed") +
+  geom_text_repel(data=omega_mt_nuc,aes(label=sp),fontface = 'bold', color = 'black', box.padding = unit(0.35, "lines"), point.padding = unit(0.5, "lines")) +
+  scale_color_gradient(low="#56B4E9", high="#D55E00") + labs(color="log(Mass)") +
+  theme(legend.position = c(0.56, 0.27))
+
+p2 <- ggplot(omega_mt_nuc, aes(x = median_nuc_w, y = median_mt_w))
+temp1 <- expression(rho ==  0.85)
+p2 <- p2 + geom_point(color="black") + xlab(expression(paste("nuc"[omega], " (229 SCOs)"))) + ylab(expression(paste("mt"[omega]," (13 CDSs)"))) + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) +
+  geom_smooth(method = "lm", se = TRUE, size=1)  + annotate("text",x=0.07,y=0.065,label=temp1,parse=TRUE,size=4) + annotate("text",x=0.07,y=0.06,label='italic(P) == 0.0035',parse=TRUE,size=4)
+
+p3 <- ggplot(omega_mt_nuc2, aes(x = median_nuc_w, y = median_mt_w))
+temp2 <- expression(rho ==  0.73)
+p3 <- p3 + geom_point(color="black") + xlab(expression(paste("nuc"[omega], " (229 SCOs)"))) + ylab(expression(paste("mt"[omega]," (13 CDSs)"))) + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=20),axis.title.x = element_text(face="bold", size=20)) +
+  geom_smooth(method = "lm", se = TRUE, size=1)  + annotate("text",x=0.06,y=0.045,label=temp2,parse=TRUE,size=4) + annotate("text",x=0.06,y=0.04,label='italic(P) == 0.045',parse=TRUE,size=4)
+
+ggarrange(p1,p2,p3, ncol = 3, nrow = 1,labels = c("A", "B", "C"))
+```

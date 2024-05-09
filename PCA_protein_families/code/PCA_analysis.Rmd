@@ -1,0 +1,201 @@
+---
+title: "PCA analysis of functional composition among rodent genomes"
+author: "Santiago Herrera-Alvarez"
+date: "September 9, 2018"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    highlight: kate
+geometry: margin=2cm
+fontsize: 10pt
+---
+
+```{r knitr, echo=FALSE}
+knitr::opts_chunk$set(
+  comment   = "#",
+  results   = "hold",
+  # collapse  = TRUE,
+  fig.align = "center",
+  cache=FALSE,
+  message = FALSE,
+  warning = FALSE,
+  tidy= TRUE,
+  tidy.opts=list(width.cutoff=80))
+```
+
+### The idea behind the PCA
+PCA based on content and size of gene families has been shown to reflect 
+important evolutionary splits between groups or clades of animals (non-bilaterian 
+and bilaterian: Simakov et al., 2013; deuterostomes and protostomes: Albertin et al., 2015).
+
+Following Simakov et al. (2013), functional repertoires of the genomes were represented in a multidimensional space, where each dimension corresponds to a particular gene family. A principal component analysis (PCA) was conducted using the prcomp function in R (R Development Core Team, 2008) on the count of the number of genes in each gene family as identified by PANTHER. The coordinate of a species??? genome along each dimension represents the number of genes that it contains with the corresponding gene family normalized by the total number of genes in that particular species.
+
+In the folder *PANTHER_output* are the outputs of PANTHER families annotations for each genome. The annotations were performed using the protocol for large-scale gene function analysis with PANTHER (Mi et al., 2013).
+
+```{r}
+#Read each list of families as a separate file
+BMRat <- as.character(read.csv("../PANTHER_output/BMRat.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Capybara <- as.character(read.csv("../PANTHER_output/Capybara.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Castor <- as.character(read.csv("../PANTHER_output/Castor.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Chinchilla <- as.character(read.csv("../PANTHER_output/Chinchilla.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+DeerMouse <- as.character(read.csv("../PANTHER_output/DeerMouse.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Degu <- as.character(read.csv("../PANTHER_output/Degu.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+GrSquirrel <- as.character(read.csv("../PANTHER_output/GrSquirrel.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+GuineaPig <- as.character(read.csv("../PANTHER_output/GuineaPig.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Hamster <- as.character(read.csv("../PANTHER_output/Hamster.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Jerboa <- as.character(read.csv("../PANTHER_output/Jerboa.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+KangRat <- as.character(read.csv("../PANTHER_output/KangRat.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Marmota <- as.character(read.csv("../PANTHER_output/Marmota.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Mouse <- as.character(read.csv("../PANTHER_output/Mouse.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+NMRat <- as.character(read.csv("../PANTHER_output/NMRat.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Rat <- as.character(read.csv("../PANTHER_output/Rat.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+Vole <- as.character(read.csv("../PANTHER_output/Vole.faa_PANTHER.txt",h=FALSE,sep="\t")$V2)
+```
+
+We established the *universe* of available **unique** gene families present in the 16 genomes, as a baseline for further comparison.
+
+```{r}
+avail_panther_fams <- Reduce(union, list(BMRat,Capybara,Castor,Chinchilla,DeerMouse,Degu,GrSquirrel,GuineaPig,Hamster,Jerboa,KangRat,Marmota,Mouse,NMRat,Rat,Vole)) #23110 gene families
+```
+
+We counted the number of occurrences of each gene family within the *universe* of gene families in each of the genomes (according to the PANTHER annotation output)
+
+```{r}
+BMRat_panther_count <- sapply(avail_panther_fams, function(x) sum(x==BMRat))
+Capybara_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Capybara))
+Castor_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Castor))
+Chinchilla_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Chinchilla))
+DeerMouse_panther_count <- sapply(avail_panther_fams, function(x) sum(x==DeerMouse))
+Degu_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Degu))
+GrSquirrel_panther_count <- sapply(avail_panther_fams, function(x) sum(x==GrSquirrel))
+GuineaPig_panther_count <- sapply(avail_panther_fams, function(x) sum(x==GuineaPig))
+Hamster_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Hamster))
+Jerboa_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Jerboa))
+KangRat_panther_count <- sapply(avail_panther_fams, function(x) sum(x==KangRat))
+Marmota_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Marmota))
+Mouse_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Mouse))
+NMRat_panther_count <- sapply(avail_panther_fams, function(x) sum(x==NMRat))
+Rat_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Rat))
+Vole_panther_count <- sapply(avail_panther_fams, function(x) sum(x==Vole))
+```
+
+Given that some genomes may be better annotated than others, or may differ in size and gene content, we normalized the counts of each species with the total number of gene families of that particular species (Simakov et al., 2013):
+
+>Count of molecular functions / Total number of gene familes
+      
+```{r}
+BMRat_panther_count_norm <- BMRat_panther_count/length(BMRat)
+Capybara_panther_count_norm <- Capybara_panther_count/length(Capybara)
+Castor_panther_count_norm <- Castor_panther_count/length(Castor)
+Chinchilla_panther_count_norm <- Chinchilla_panther_count/length(Chinchilla)
+DeerMouse_panther_count_norm <- DeerMouse_panther_count/length(DeerMouse)
+Degu_panther_count_norm <- Degu_panther_count/length(Degu)
+GrSquirrel_panther_count_norm <- GrSquirrel_panther_count/length(GrSquirrel)
+GuineaPig_panther_count_norm <- GuineaPig_panther_count/length(GuineaPig)
+Hamster_panther_count_norm <- Hamster_panther_count/length(Hamster)
+Jerboa_panther_count_norm <- Jerboa_panther_count/length(Jerboa)
+KangRat_panther_count_norm <- KangRat_panther_count/length(KangRat)
+Marmota_panther_count_norm <- Marmota_panther_count/length(Marmota)
+Mouse_panther_count_norm <- Mouse_panther_count/length(Mouse)
+NMRat_panther_count_norm <- NMRat_panther_count/length(NMRat)
+Rat_panther_count_norm <- Rat_panther_count/length(Rat)
+Vole_panther_count_norm <- Vole_panther_count/length(Vole)
+```
+
+### PCA analysis
+We merged all the data into a single matrix to organize the counts per family per species.
+```{r}
+#This vector contains the counts for *ALL* the species
+panther_fam_counts <- c(BMRat_panther_count_norm,Capybara_panther_count_norm,Castor_panther_count_norm,Chinchilla_panther_count_norm,DeerMouse_panther_count_norm,Degu_panther_count_norm,GrSquirrel_panther_count_norm,GuineaPig_panther_count_norm,Hamster_panther_count_norm,Jerboa_panther_count_norm,KangRat_panther_count_norm,Marmota_panther_count_norm,Mouse_panther_count_norm,NMRat_panther_count_norm,Rat_panther_count_norm,Vole_panther_count_norm)
+
+#Merge the vector into a matrix: organize the counts by row to match spp and gene family
+matriz <- matrix(panther_fam_counts, ncol = length(avail_panther_fams), nrow = 16,byrow=TRUE)
+
+#rownames(matriz) <- c("Blind Mole Rat","Capybara","Castor","Chinchilla","Deer Mouse","Degu","Ground Squirrel","Guinea Pig","Hamster","Jerboa","Kangaroo Rat","Marmota","Mouse","Naked Mole Rat","Rat","Vole")
+
+rownames(matriz) <- c("Ngal","Hhyd","Ccan","Clan","Pman","Odeg","Itri","Cpor","Maur","Jjac","Dord","Mmar","Mmus","Hgla","Rnor","Mocr")
+
+colnames(matriz) <- avail_panther_fams
+
+m <- data.frame(matriz)
+
+#Perform the PCA and choose the PC's
+pca=prcomp(m[1:23110])
+dat = as.data.frame(pca$x)
+
+#Assign the clade for each especies
+dat$Group <- c("MRC","HYST","MRC","HYST","MRC","HYST","SRC","HYST","MRC","MRC","MRC","SRC","MRC","HYST","MRC","MRC")
+```
+
+Analysis of the output of the PCA to choose which PC's explain the highest proportion of variation using a *screenplot* and the summary of cummulative proportion of variance.
+
+```{r}
+screeplot(pca, type="l")
+summary(pca)
+```
+
+We plotted the PCA with the first two PC's which have a Cumulative Proportion of explained variation of ~31%.
+
+```{r}
+#Plot the PCA
+library(ggplot2)
+library(ggfortify)
+library(ggrepel)
+
+ggplot(data=dat,aes(x=PC1,y=PC2, colour=Group)) + geom_point() + scale_x_continuous(limits = c(-0.006, 0.015)) + labs(x="PC1 (20.14%) ", y = "PC2 (11.34%)") + theme(panel.background = element_rect(fill = "white", colour = "black"), panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.text.x = element_text(face="bold", size=13),axis.text.y = element_text(face="bold", size=13), axis.title.y = element_text(face="bold", size=15),axis.title.x = element_text(face="bold", size=15)) + theme(legend.position = c(0.75, 0.6),legend.background = element_rect(color = "black", fill = "white", size = 0.5, linetype = "solid"))  + geom_text_repel(aes(label = rownames(dat))) + theme(legend.key = element_blank()) + scale_color_manual(values=c("Blue", "#33a02c", "#e31a1c")) + guides(colour = guide_legend(override.aes = list(size=5)))
+
+```
+
+
+### Overrepresentation test (Fisher's exact test)
+
+We looked at the gene families that were driving Capybara's genome functional diversification particularly in PC1.
+
+```{r}
+#Only families that lie on the 2.5% tails of the distribution of the loadings
+
+loadings = as.data.frame(pca$rotation)
+escogidas_pc1 <- loadings$PC1 >= quantile(loadings$PC1,0.975) | loadings$PC1 <= quantile(loadings$PC1,0.025)
+pc1_importantes <- loadings$PC1[escogidas_pc1]
+names <- rownames(loadings)
+pc1 <- names[escogidas_pc1]
+pc1_edit <- gsub("\\.SF[0-9]+", "", pc1)
+avail_panther_fams_edit <- gsub("\\:SF[0-9]+", "", avail_panther_fams)
+
+pc1_fams <- unique(pc1_edit)
+fisherPvalues_pc1 <- c()
+gene_fam_pc1 <- c()
+
+for (i in 1:length(pc1_fams)){
+  #Perform a Fisher's exact test iteratively for each gene family on the 2.5% tails
+  a <- sapply(pc1_fams[i], function(x) sum(x==pc1_edit))  
+  b <- sapply(pc1_fams[i], function(x) sum(x==avail_panther_fams_edit))
+  c <- length(pc1_edit)-a
+  d <- length(avail_panther_fams_edit)-b
+  f <- fisher.test(matrix(c(a,b,c,d),nrow=2,ncol=2,byrow=TRUE),alternative="greater")
+  gene_fam_pc1 <- c(gene_fam_pc1,as.character(pc1_fams[i]))
+  fisherPvalues_pc1 <- c(fisherPvalues_pc1,f$p.value)
+}
+
+#Bonferroni correction for multiple testing
+fisherPvalues_pc1_Bonferroni <- p.adjust(fisherPvalues_pc1,method="bonferroni",n=length(fisherPvalues_pc1))
+pc1_fisherResults <- data.frame(gene_fam_pc1,fisherPvalues_pc1,fisherPvalues_pc1_Bonferroni)
+significativas_pc1 <- pc1_fisherResults[pc1_fisherResults$fisherPvalues_pc1_Bonferroni<0.05,]
+
+#Gene families driving functional diversification in PC1
+print(pc1_fisherResults[which(pc1_fisherResults$fisherPvalues_pc1_Bonferroni < 0.05),])
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
